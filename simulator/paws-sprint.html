@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Alex Arcade</title>
+<link rel="canonical" href="play.html">
+<script>
+  // 旧入口：统一跳到 play.html，保留原来的游戏参数
+  (function () {
+    var q = new URLSearchParams(location.search);
+    var id = q.get('id') || q.get('game') || 'pawssprint';
+    location.replace('play.html' + (id ? '?id=' + encodeURIComponent(id) : ''));
+  })();
+</script>
+<meta http-equiv="refresh" content="0; url=play.html?id=pawssprint">
+</head>
+<body>
+<p><a href="play.html?id=pawssprint">前往 Alex Arcade 游戏页</a></p>
+</body>
+</html>

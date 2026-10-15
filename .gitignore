@@ -1,0 +1,14 @@
+build/
+sdkconfig
+sdkconfig.old
+managed_components/
+.vscode/
+.idea/
+.env
+.env.*
+scratch/
+__pycache__/
+*.pyc
+.DS_Store
+build_cloud/
+*.bin

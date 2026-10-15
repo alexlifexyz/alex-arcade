@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b0910">
+<title>Alex Arcade · 三键街机厅</title>
+<meta name="description" content="Alex Arcade：为 AI Passport 三键掌机做的街机合集。雷霆战机、雷霆飞车、坦克大战、冒险岛、魂斗罗、霓虹宝石等 26 款，浏览器里即开即玩。">
+<meta property="og:title" content="Alex Arcade · 三键街机厅">
+<meta property="og:description" content="26 款三键小游戏，浏览器里即开即玩，每款三个任务等你拿星。">
+<meta property="og:image" content="assets/hall.jpg">
+<link rel="icon" href="assets/coin.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0910;
+    --bg2: #131019;
+    --card: rgba(255,255,255,.035);
+    --line: rgba(255,255,255,.08);
+    --text: #f3ece0;
+    --sub: #a79f93;
+    --gold: #f0c14b;
+    --pink: #ff4d8d;
+    --cyan: #38e1ff;
+    --cjk: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  html, body { background: var(--bg); color: var(--text); }
+  body { font-family: var(--cjk); min-height: 100vh; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; color: inherit; cursor: pointer; }
+  .wrap { width: min(1180px, calc(100vw - 40px)); margin: 0 auto; }
+  .display { font-family: "Bebas Neue", Impact, var(--cjk); letter-spacing: .06em; }
+  .pix { font-family: "Silkscreen", "Courier New", monospace; }
+
+  /* ---------- header ---------- */
+  header {
+    position: sticky; top: 0; z-index: 30;
+    background: rgba(11,9,16,.8); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line);
+  }
+  .hdr { display: flex; align-items: center; gap: 16px; height: 58px; }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo img { width: 28px; height: 28px; border-radius: 50%; box-shadow: 0 0 0 2px #1a1008, 0 0 0 3px var(--gold); }
+  .logo b { font-family: "Bebas Neue", Impact, sans-serif; font-weight: 400; font-size: 26px; letter-spacing: .14em; color: var(--gold); }
+  nav { display: flex; gap: 4px; margin-left: 12px; }
+  nav a { font-size: 14px; color: var(--sub); padding: 8px 12px; border-radius: 10px; }
+  nav a:hover { color: var(--text); background: rgba(255,255,255,.05); }
+  .hdr-r { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 17px; border: 1px solid var(--line); background: rgba(255,255,255,.04); font-size: 13px; font-weight: 700; }
+  .pill.star { color: var(--gold); border-color: rgba(240,193,75,.35); }
+  .pill svg { width: 16px; height: 16px; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--line); }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: -2;
+    background: url("assets/hall.jpg") center 35% / cover no-repeat; opacity: .32; filter: saturate(.9);
+  }
+  .hero::after {
+    content: ""; position: absolute; inset: 0; z-index: -1;
+    background:
+      radial-gradient(60% 70% at 78% 45%, rgba(56,225,255,.12), transparent 70%),
+      linear-gradient(90deg, rgba(11,9,16,.96) 0%, rgba(11,9,16,.75) 50%, rgba(11,9,16,.55) 100%),
+      linear-gradient(180deg, transparent 60%, var(--bg) 100%);
+  }
+  .hero-in { display: grid; grid-template-columns: 1.1fr .9fr; gap: 40px; align-items: center; padding: 56px 0 64px; }
+  .kicker { font-size: 13px; letter-spacing: .2em; color: var(--gold); font-weight: 700; margin-bottom: 14px; }
+  .kicker i { font-style: normal; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #3f3; box-shadow: 0 0 8px #3f3; margin-right: 8px; vertical-align: 1px; animation: blink 1.6s infinite; }
+  @keyframes blink { 50% { opacity: .3; } }
+  h1 { font-family: "Bebas Neue", Impact, sans-serif; font-weight: 400; font-size: clamp(64px, 9vw, 128px); line-height: .85; letter-spacing: .04em; }
+  h1 span { color: var(--pink); text-shadow: 0 0 30px rgba(255,77,141,.5); }
+  .lead { font-size: 18px; line-height: 1.7; color: #e6ddcf; max-width: 32em; margin: 20px 0 26px; }
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn { display: inline-flex; align-items: center; gap: 10px; height: 50px; padding: 0 22px; border-radius: 14px; font-weight: 800; font-size: 16px; border: 1px solid var(--line); background: rgba(255,255,255,.06); transition: transform .12s, filter .12s; }
+  .btn:hover { transform: translateY(-2px); }
+  .btn.primary { background: var(--gold); color: #1a1008; border: 0; box-shadow: 0 10px 30px rgba(240,193,75,.25); }
+  .btn.primary small { font-weight: 600; opacity: .7; font-size: 12px; }
+  .btn img { width: 22px; height: 22px; border-radius: 50%; }
+  .stats { display: flex; gap: 28px; margin-top: 34px; }
+  .stats div b { display: block; font-family: "Bebas Neue", Impact, sans-serif; font-weight: 400; font-size: 38px; line-height: 1; color: var(--text); }
+  .stats div span { font-size: 12px; color: var(--sub); letter-spacing: .08em; }
+
+  .hero-dev { justify-self: center; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .dev {
+    width: 300px; padding: 14px 14px 18px; border-radius: 28px;
+    background: linear-gradient(165deg, #2b2533, #15121b 70%);
+    box-shadow: 0 40px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.08), inset 0 1px 0 rgba(255,255,255,.12), 0 0 120px rgba(56,225,255,.12);
+    transform: rotate(2deg);
+  }
+  .dev-top { display: flex; justify-content: space-between; font-size: 10px; color: #8d8496; padding: 0 6px 10px; }
+  .dev-scr { position: relative; aspect-ratio: 3/4; border-radius: 10px; overflow: hidden; background: #000; box-shadow: 0 0 0 3px #07060a; cursor: pointer; }
+  .dev-scr canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; transition: opacity .35s; }
+  .dev-scr .tag { position: absolute; left: 10px; bottom: 10px; right: 10px; display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-radius: 10px; background: rgba(0,0,0,.65); backdrop-filter: blur(6px); font-size: 13px; font-weight: 800; }
+  .dev-scr .tag span { font-size: 11px; color: var(--gold); }
+  .dev-keys { display: flex; justify-content: space-around; margin-top: 14px; }
+  .dev-keys i { width: 42px; height: 42px; border-radius: 50%; background: radial-gradient(circle at 35% 28%, #4a4352, #1a161f); box-shadow: 0 4px 0 #0a080d; display: grid; place-items: center; font-style: normal; font-size: 10px; color: #cfc6d8; }
+  .dev-keys i:last-child { background: radial-gradient(circle at 35% 28%, #ffe08a, #f0c14b 55%, #8a5a10); color: #1a1008; }
+  .dots { display: flex; gap: 6px; }
+  .dots b { width: 6px; height: 6px; border-radius: 3px; background: rgba(255,255,255,.2); transition: width .3s, background .3s; }
+  .dots b.on { width: 20px; background: var(--gold); }
+
+  /* ---------- sections ---------- */
+  section.block { padding: 56px 0 8px; }
+  .sh { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+  .sh h2 { font-size: 26px; font-weight: 900; }
+  .sh h2 em { font-style: normal; font-family: "Bebas Neue", Impact, sans-serif; font-weight: 400; color: var(--gold); letter-spacing: .08em; margin-right: 10px; font-size: 30px; }
+  .sh p { color: var(--sub); font-size: 14px; }
+
+  /* 今日 */
+  .today { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 20px; }
+  .daily { display: grid; grid-template-columns: 120px 1fr; gap: 18px; align-items: center; position: relative; overflow: hidden; }
+  .daily::after { content: "DAILY"; position: absolute; right: -8px; bottom: -22px; font-family: "Bebas Neue", Impact, sans-serif; font-size: 110px; color: rgba(255,255,255,.03); pointer-events: none; }
+  .daily canvas, .thumb canvas { width: 100%; aspect-ratio: 3/4; display: block; border-radius: 12px; background: #000; image-rendering: pixelated; }
+  .daily .lbl { font-size: 12px; font-weight: 800; letter-spacing: .14em; color: var(--pink); }
+  .daily h3 { font-size: 22px; margin: 6px 0; }
+  .daily p { color: #d8cfc1; font-size: 15px; line-height: 1.6; margin-bottom: 14px; }
+  .daily p b { color: var(--gold); }
+  .btn.sm { height: 40px; font-size: 14px; padding: 0 16px; border-radius: 12px; }
+  .prog h3 { font-size: 15px; color: var(--sub); font-weight: 700; margin-bottom: 12px; }
+  .bigstar { display: flex; align-items: baseline; gap: 10px; }
+  .bigstar b { font-family: "Bebas Neue", Impact, sans-serif; font-weight: 400; font-size: 52px; color: var(--gold); line-height: 1; }
+  .bigstar span { color: var(--sub); }
+  .bar { height: 8px; border-radius: 4px; background: rgba(255,255,255,.08); overflow: hidden; margin: 12px 0 16px; }
+  .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--gold), var(--pink)); border-radius: 4px; }
+  .recent { display: flex; flex-direction: column; gap: 8px; }
+  .recent a { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,.03); font-size: 14px; }
+  .recent a:hover { background: rgba(255,255,255,.07); }
+  .recent a span:last-child { font-family: "Bebas Neue", Impact, sans-serif; font-size: 18px; color: var(--gold); letter-spacing: .04em; }
+  .recent .empty { color: var(--sub); font-size: 13px; }
+
+  /* 精选横滑 */
+  .rail { display: grid; grid-auto-flow: column; grid-auto-columns: 220px; gap: 16px; overflow-x: auto; padding: 4px 4px 18px; scroll-snap-type: x mandatory; scrollbar-width: thin; scrollbar-color: rgba(240,193,75,.3) transparent; }
+  .feat { scroll-snap-align: start; border-radius: 20px; overflow: hidden; background: var(--bg2); border: 1px solid var(--line); transition: transform .18s, border-color .18s, box-shadow .18s; position: relative; }
+  .feat:hover, .feat:focus-visible { transform: translateY(-6px); border-color: var(--c); box-shadow: 0 20px 40px rgba(0,0,0,.5), 0 0 30px color-mix(in srgb, var(--c) 25%, transparent); outline: none; }
+  .feat .thumb { position: relative; }
+  .feat .thumb canvas { border-radius: 0; }
+  .feat .thumb::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 55%, var(--bg2)); pointer-events: none; }
+  .feat .badge { position: absolute; top: 10px; left: 10px; z-index: 2; font-size: 11px; font-weight: 900; padding: 3px 8px; border-radius: 99px; background: var(--c); color: #120c06; }
+  .feat .play { position: absolute; top: 10px; right: 10px; z-index: 2; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: rgba(0,0,0,.6); opacity: 0; transition: .2s; }
+  .feat:hover .play { opacity: 1; }
+  .feat .info { padding: 2px 14px 16px; margin-top: -30px; position: relative; z-index: 2; }
+  .feat h3 { font-size: 18px; font-weight: 900; }
+  .feat .en { font-family: "Silkscreen", monospace; font-size: 10px; color: var(--c); letter-spacing: .04em; }
+  .feat p { font-size: 13px; color: var(--sub); line-height: 1.55; margin: 8px 0 10px; min-height: 40px; }
+  .meta { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--sub); }
+  .stars { color: var(--gold); letter-spacing: 2px; }
+  .stars .o { color: rgba(255,255,255,.2); }
+
+  /* 游戏库 */
+  .tools { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chips button { height: 34px; padding: 0 14px; border-radius: 17px; border: 1px solid var(--line); background: none; color: var(--sub); font-size: 13px; font-weight: 700; }
+  .chips button:hover { color: var(--text); }
+  .chips button.on { background: var(--gold); border-color: var(--gold); color: #120c06; }
+  .chips button span { opacity: .6; margin-left: 4px; font-weight: 500; }
+  .search { margin-left: auto; position: relative; }
+  .search input { height: 38px; width: 220px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.3); color: var(--text); padding: 0 12px 0 34px; font-size: 14px; outline: none; font-family: inherit; }
+  .search input:focus { border-color: var(--gold); }
+  .search svg { position: absolute; left: 11px; top: 11px; width: 16px; height: 16px; color: var(--sub); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 14px; }
+  .card { display: flex; flex-direction: column; border-radius: 16px; overflow: hidden; background: var(--card); border: 1px solid var(--line); transition: transform .15s, border-color .15s; }
+  .card:hover, .card:focus-visible { transform: translateY(-4px); border-color: var(--c); outline: none; }
+  .card .thumb { position: relative; }
+  .card .thumb canvas { border-radius: 0; }
+  .card .badge { position: absolute; top: 8px; left: 8px; font-size: 10px; font-weight: 900; padding: 2px 7px; border-radius: 99px; background: var(--c); color: #120c06; }
+  .card .body { padding: 10px 12px 12px; }
+  .card h4 { font-size: 15px; font-weight: 800; display: flex; gap: 6px; align-items: center; }
+  .card .pitch { font-size: 12px; color: var(--sub); margin: 4px 0 8px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 34px; }
+  .none { color: var(--sub); padding: 40px 0; text-align: center; }
+
+  /* 三键 */
+  .keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .key { padding: 24px; }
+  .key .cap { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; font-family: "Silkscreen", monospace; font-weight: 700; margin-bottom: 14px;
+    background: radial-gradient(circle at 35% 28%, #4a4352, #28222e 60%, #1a161f); box-shadow: 0 5px 0 #0a080d, inset 0 1px 0 rgba(255,255,255,.18); }
+  .key.ok .cap { background: radial-gradient(circle at 35% 28%, #ffe08a, #f0c14b 55%, #8a5a10); color: #1a1008; }
+  .key h3 { font-size: 18px; margin-bottom: 6px; }
+  .key p { color: var(--sub); font-size: 14px; line-height: 1.7; }
+  .key kbd { font-family: "Silkscreen", monospace; font-size: 11px; border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; color: var(--text); }
+
+  /* 掌机 */
+  .passport { display: grid; grid-template-columns: .9fr 1.1fr; gap: 0; overflow: hidden; padding: 0; }
+  .passport img { width: 100%; height: 100%; object-fit: cover; min-height: 260px; }
+  .passport .txt { padding: 32px; display: flex; flex-direction: column; justify-content: center; }
+  .passport h2 { font-size: 26px; margin-bottom: 10px; }
+  .passport p { color: #d8cfc1; line-height: 1.8; font-size: 15px; margin-bottom: 18px; }
+
+  footer { margin-top: 64px; border-top: 1px solid var(--line); padding: 26px 0 40px; color: var(--sub); font-size: 13px; }
+  footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  footer a { color: var(--gold); }
+
+  .coin-drop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(8,5,4,.5); opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .coin-drop.show { opacity: 1; }
+  .coin-drop img { width: 110px; height: 110px; border-radius: 50%; }
+  .coin-drop.show img { animation: drop .55s cubic-bezier(.3,1.4,.6,1); }
+  @keyframes drop { from { transform: translateY(-40vh) rotateY(0); } to { transform: none; } }
+
+  @media (max-width: 960px) {
+    .hero-in { grid-template-columns: 1fr; padding: 36px 0 44px; }
+    .hero-dev { order: -1; }
+    .dev { width: 250px; transform: none; }
+    .today, .passport { grid-template-columns: 1fr; }
+    .keys { grid-template-columns: 1fr; }
+    nav { display: none; }
+  }
+  @media (max-width: 600px) {
+    .wrap { width: calc(100vw - 28px); }
+    .lead { font-size: 16px; }
+    .stats { gap: 18px; }
+    .stats div b { font-size: 30px; }
+    .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .search { margin-left: 0; width: 100%; }
+    .search input { width: 100%; }
+    .daily { grid-template-columns: 90px 1fr; }
+    .rail { grid-auto-columns: 180px; }
+    .hdr-r .pill.mute span { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap hdr">
+    <a class="logo" href="./"><img src="assets/coin.jpg" alt=""><b>ALEX ARCADE</b></a>
+    <nav>
+      <a href="#today">今日</a>
+      <a href="#featured">重制精选</a>
+      <a href="#library">游戏库</a>
+      <a href="#keys">怎么玩</a>
+    </nav>
+    <div class="hdr-r">
+      <span class="pill star" title="任务星星"><svg viewBox="0 0 20 20"><path fill="currentColor" d="M10 1.5l2.6 5.5 6 .8-4.4 4.1 1.1 6-5.3-2.9-5.3 2.9 1.1-6L1.4 7.8l6-.8z"/></svg><span id="starPill">0</span></span>
+      <button class="pill mute" id="mute" type="button"></button>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap hero-in">
+    <div>
+      <div class="kicker"><i></i>AI PASSPORT · 三键街机厅</div>
+      <h1>ALEX<br>AR<span>CADE</span></h1>
+      <p class="lead">一台只有三颗键的掌机，二十几款能在浏览器里直接玩的街机。自动开火、自动奔跑、一键扑翼，按键少，照样好玩。</p>
+      <div class="cta">
+        <a class="btn primary" id="ctaMain" href="../simulator/play.html"><img src="assets/coin.jpg" alt=""><span id="ctaText">投币开玩</span></a>
+        <button class="btn" id="ctaRandom" type="button">🎲 随机来一台</button>
+      </div>
+      <div class="stats">
+        <div><b id="sGames">26</b><span>款游戏</span></div>
+        <div><b id="sRemade">15</b><span>款 2026 重制</span></div>
+        <div><b id="sStars">0</b><span>颗星待收集</span></div>
+      </div>
+    </div>
+    <div class="hero-dev">
+      <div class="dev">
+        <div class="dev-top pix"><span>AI PASSPORT</span><span id="attractEn">ATTRACT MODE</span></div>
+        <div class="dev-scr" id="attract" role="link" tabindex="0" aria-label="打开当前演示的游戏">
+          <canvas id="attractCv" width="480" height="640"></canvas>
+          <div class="tag"><b id="attractName">…</b><span>点击开玩 ▶</span></div>
+        </div>
+        <div class="dev-keys"><i>UP</i><i>DN</i><i>OK</i></div>
+      </div>
+      <div class="dots" id="dots"></div>
+    </div>
+  </div>
+</section>
+
+<main class="wrap">
+  <section class="block" id="today">
+    <div class="sh"><h2><em>TODAY</em>今日</h2><p>每天换一个挑战，完成就拿一颗星。</p></div>
+    <div class="today">
+      <div class="panel daily" id="daily"></div>
+      <div class="panel prog">
+        <h3>你的收集进度</h3>
+        <div class="bigstar"><b id="pStars">0</b><span id="pTotal">/ 0 颗星</span></div>
+        <div class="bar"><i id="pBar" style="width:0"></i></div>
+        <div class="recent" id="recent"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="featured">
+    <div class="sh"><h2><em>REMADE</em>2026 重制精选</h2><p>鼠标移上去就开始演示。</p></div>
+    <div class="rail" id="rail"></div>
+  </section>
+
+  <section class="block" id="library">
+    <div class="sh"><h2><em>LIBRARY</em>全部游戏</h2><p id="libCount"></p></div>
+    <div class="tools">
+      <div class="chips" id="chips"></div>
+      <label class="search"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="7" r="5"/><path d="M11 11l4 4"/></svg><input id="q" type="search" placeholder="搜索游戏  /" autocomplete="off"></label>
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section class="block" id="keys">
+    <div class="sh"><h2><em>3 KEYS</em>三颗键就够了</h2><p>和掌机同一套操作，键盘、鼠标、手机触屏都能玩。</p></div>
+    <div class="keys">
+      <div class="panel key"><div class="cap">UP</div><h3>向左 / 向上</h3><p>移动、转向、抬枪、扔石斧，看游戏而定。键盘 <kbd>←</kbd> <kbd>↑</kbd> <kbd>A</kbd>。</p></div>
+      <div class="panel key"><div class="cap">DN</div><h3>向右 / 向下</h3><p>移动、转向、卧倒、冲刺。键盘 <kbd>→</kbd> <kbd>↓</kbd> <kbd>D</kbd>。</p></div>
+      <div class="panel key ok"><div class="cap">OK</div><h3>动作</h3><p>跳、开火、确认。很多游戏里按住和点按效果不同。键盘 <kbd>Space</kbd> <kbd>Enter</kbd>，也可以直接点屏幕。</p></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="panel passport">
+      <img src="assets/passport.jpg" alt="AI Passport 三键掌机">
+      <div class="txt">
+        <div class="kicker">HARDWARE</div>
+        <h2>这些游戏本来是为一台小掌机写的</h2>
+        <p>FoloToy AI Passport：240×320 小屏，UP、DOWN、OK 三颗键，ESP32-C3 芯片。仓库里有整合版固件，刷进去开机就是街机菜单，长按 OK 随时回菜单。</p>
+        <div class="cta"><a class="btn sm" href="../README.zh_CN.md">看固件和刷机方法 →</a></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>© 2026 Alex Arcade · 给 AI Passport 做的独立游戏</div>
+    <div>最高分、星星都只存在这台浏览器里 · <a href="../simulator/play.html">直接进游戏页</a></div>
+  </div>
+</footer>
+
+<div class="coin-drop" id="drop" aria-hidden="true"><img src="assets/coin.jpg" alt=""></div>
+
+<script src="../simulator/catalog.js"></script>
+<script src="../simulator/arcade-kit.js"></script>
+<script src="../simulator/games/thunder.js"></script>
+<script src="../simulator/games/racer.js"></script>
+<script src="../simulator/games/tank.js"></script>
+<script src="../simulator/games/island.js"></script>
+<script src="../simulator/games/contra.js"></script>
+<script src="../simulator/games/flappy.js"></script>
+<script src="../simulator/games/paws.js"></script>
+<script src="../simulator/games/columns.js"></script>
+<script src="../simulator/games/fishhunter.js"></script>
+<script src="../simulator/games/runner.js"></script>
+<script src="../simulator/games/pong.js"></script>
+<script src="../simulator/games/bouncy.js"></script>
+<script src="../simulator/games/splasher.js"></script>
+<script src="../simulator/games/lasercat.js"></script>
+<script src="../simulator/games/roulette.js"></script>
+<script src="../simulator/games/gear.js"></script>
+<script src="../simulator/games/flydriver.js"></script>
+<script src="../simulator/games/flysaber.js"></script>
+<script src="../simulator/games/wave.js"></script>
+<script src="../simulator/games/wind.js"></script>
+<script src="../simulator/games/bubble.js"></script>
+<script src="../simulator/games/huddle.js"></script>
+<script src="../simulator/games/smash.js"></script>
+<script src="../simulator/games/shyfish.js"></script>
+<script src="../simulator/games/sparkler.js"></script>
+<script src="../simulator/games/worldtime.js"></script>
+<script>
+(function () {
+  'use strict';
+  const A = window.Arcade, Save = A.Save, U = A.U;
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const CAT = Object.fromEntries(window.CATEGORIES.map((c) => [c.id, c.label]));
+  const LIST = window.CATALOG.filter((c) => A.games[c.id]);
+  const FEAT = LIST.filter((c) => c.featured);
+  const url = (id) => '../simulator/play.html?id=' + encodeURIComponent(id);
+  const totalStars = LIST.reduce((n, g) => n + g.missions.length, 0);
+  const sfx = new A.Sfx(); sfx.muted = Save.muted();
+  Save.migrate();
+
+  function starsHtml(g) {
+    if (!g.missions.length) return '<span class="stars" style="color:var(--sub)">小品</span>';
+    const n = Save.stars(g.id);
+    return '<span class="stars">' + '★'.repeat(n) + '<span class="o">' + '★'.repeat(g.missions.length - n) + '</span></span>';
+  }
+  function go(id) {
+    Save.setLast(id);
+    $('drop').classList.add('show');
+    sfx.coin();
+    setTimeout(() => { location.href = url(id); }, 520);
+  }
+  window.addEventListener('pageshow', () => $('drop').classList.remove('show'));
+
+  // ---------- 顶部统计
+  function paintStats() {
+    const have = Save.totalStars(LIST.map((g) => g.id));
+    $('starPill').textContent = have + ' / ' + totalStars;
+    $('sGames').textContent = LIST.length;
+    $('sRemade').textContent = LIST.filter((g) => g.remade).length;
+    $('sStars').textContent = totalStars;
+    $('pStars').textContent = have;
+    $('pTotal').textContent = '/ ' + totalStars + ' 颗星';
+    $('pBar').style.width = (have / totalStars * 100).toFixed(1) + '%';
+  }
+  function paintMute() {
+    $('mute').innerHTML = (sfx.muted
+      ? '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 6h3l4-3v10L5 10H2z"/><path d="M11 6l4 4M15 6l-4 4" stroke="currentColor" stroke-width="1.6"/></svg>'
+      : '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 6h3l4-3v10L5 10H2z"/><path d="M11 5.5a3.5 3.5 0 010 5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>') + '<span>' + (sfx.muted ? '静音' : '音效') + '</span>';
+  }
+  $('mute').onclick = () => { sfx.muted = !sfx.muted; Save.setMuted(sfx.muted); paintMute(); if (!sfx.muted) sfx.select(); };
+
+  // ---------- 继续 / 随机
+  const last = LIST.find((g) => g.id === Save.last());
+  if (last) { $('ctaText').innerHTML = '继续：' + esc(last.title) + ' <small>最佳 ' + U.fmt(Save.best(last.id)) + '</small>'; $('ctaMain').href = url(last.id); $('ctaMain').onclick = (e) => { e.preventDefault(); go(last.id); }; }
+  else { $('ctaMain').href = url('thunder'); $('ctaMain').onclick = (e) => { e.preventDefault(); go('thunder'); }; }
+  $('ctaRandom').onclick = () => go(U.pick(LIST.filter((g) => !g.noScore)).id);
+
+  // ---------- 缩略图：按需生成，悬停时实时演示（同一时刻只跑一个）
+  const thumbs = new Map();
+  let live = null;
+  const queue = [];
+  let busy = false;
+  function pump() {
+    if (busy || !queue.length) return;
+    busy = true;
+    const cv = queue.shift();
+    (window.requestIdleCallback || ((f) => setTimeout(f, 16)))(() => {
+      try { thumb(cv).snapshot(cv.dataset.frames ? +cv.dataset.frames : 260); } catch (e) { /* 忽略单个缩略图失败 */ }
+      busy = false; pump();
+    });
+  }
+  function thumb(cv) {
+    if (!thumbs.has(cv)) thumbs.set(cv, A.demo(cv.dataset.id, cv, { seed: cv.dataset.id.length * 97, loop: true }));
+    return thumbs.get(cv);
+  }
+  const io = 'IntersectionObserver' in window ? new IntersectionObserver((ents) => {
+    for (const e of ents) if (e.isIntersecting && !e.target.dataset.done) { e.target.dataset.done = '1'; queue.push(e.target); pump(); io.unobserve(e.target); }
+  }, { rootMargin: '200px' }) : null;
+  function watch(root) {
+    root.querySelectorAll('canvas[data-id]').forEach((cv) => { if (io) io.observe(cv); else { queue.push(cv); pump(); } });
+    root.querySelectorAll('[data-live]').forEach((el) => {
+      const cv = el.querySelector('canvas');
+      el.addEventListener('mouseenter', () => { if (matchMedia('(hover: hover)').matches) { if (live) live.stop(); live = thumb(cv); live.play(); } });
+      el.addEventListener('mouseleave', () => { if (live) { live.stop(); live = null; } });
+    });
+  }
+
+  // ---------- 今日挑战
+  function paintDaily() {
+    const day = U.dayIndex();
+    const g = FEAT[day % FEAT.length];
+    const undone = g.missions.map((m, i) => i).filter((i) => !Save.hasMission(g.id, i));
+    const mi = undone.length ? undone[day % undone.length] : -1;
+    $('daily').innerHTML =
+      '<canvas data-id="' + g.id + '" data-frames="300" width="240" height="320"></canvas>' +
+      '<div><div class="lbl">今日挑战 · ' + (new Date().getMonth() + 1) + '月' + new Date().getDate() + '日</div>' +
+      '<h3>' + g.icon + ' ' + esc(g.title) + '</h3>' +
+      '<p>' + (mi >= 0 ? '任务：<b>' + esc(g.missions[mi].text) + '</b>，完成就收下一颗星。' : '这台的三颗星你都拿到了，去刷新一下最高分吧。') + '</p>' +
+      '<a class="btn primary sm" href="' + url(g.id) + '" data-go="' + g.id + '">接受挑战 ▶</a></div>';
+    $('daily').querySelector('[data-go]').onclick = (e) => { e.preventDefault(); go(g.id); };
+    watch($('daily'));
+    // 最近 / 最佳
+    const played = LIST.filter((x) => Save.plays(x.id) > 0).sort((a, b) => (b.id === Save.last()) - (a.id === Save.last()) || Save.plays(b.id) - Save.plays(a.id)).slice(0, 4);
+    $('recent').innerHTML = played.length
+      ? played.map((x) => '<a href="' + url(x.id) + '"><span>' + x.icon + ' ' + esc(x.title) + ' · ' + Save.plays(x.id) + ' 局</span><span>' + U.fmt(Save.best(x.id)) + '</span></a>').join('')
+      : '<div class="empty">还没玩过。挑一台，第一颗星很好拿。</div>';
+  }
+
+  // ---------- 精选
+  function paintRail() {
+    $('rail').innerHTML = FEAT.map((g) =>
+      '<a class="feat" data-live href="' + url(g.id) + '" data-go="' + g.id + '" style="--c:' + g.color + '">' +
+        '<div class="thumb"><span class="badge">重制</span><span class="play">▶</span><canvas data-id="' + g.id + '" width="240" height="320"></canvas></div>' +
+        '<div class="info"><h3>' + g.icon + ' ' + esc(g.title) + '</h3><div class="en">' + esc((g.en || '').toUpperCase()) + '</div>' +
+        '<p>' + esc(g.pitch) + '</p><div class="meta">' + starsHtml(g) + '<span>' + (Save.best(g.id) ? '最佳 ' + U.fmt(Save.best(g.id)) : CAT[g.cat]) + '</span></div></div>' +
+      '</a>').join('');
+    watch($('rail'));
+  }
+
+  // ---------- 游戏库
+  let cat = 'all', q = '';
+  function paintLib() {
+    $('chips').innerHTML = window.CATEGORIES.map((c) => {
+      const n = c.id === 'all' ? LIST.length : LIST.filter((g) => g.cat === c.id).length;
+      return n ? '<button type="button" data-c="' + c.id + '" class="' + (c.id === cat ? 'on' : '') + '">' + c.label + '<span>' + n + '</span></button>' : '';
+    }).join('');
+    const k = q.trim().toLowerCase();
+    const shown = LIST.filter((g) => (cat === 'all' || g.cat === cat) && (!k || (g.title + g.en + g.pitch + (CAT[g.cat] || '')).toLowerCase().includes(k)));
+    $('libCount').textContent = shown.length + ' 款';
+    $('grid').innerHTML = shown.length ? shown.map((g) =>
+      '<a class="card" data-live href="' + url(g.id) + '" data-go="' + g.id + '" style="--c:' + g.color + '">' +
+        '<div class="thumb">' + (g.remade ? '<span class="badge">重制</span>' : '') + '<canvas data-id="' + g.id + '" width="240" height="320"></canvas></div>' +
+        '<div class="body"><h4>' + g.icon + ' ' + esc(g.title) + '</h4><div class="pitch">' + esc(g.pitch) + '</div>' +
+        '<div class="meta">' + starsHtml(g) + '<span>' + (Save.best(g.id) ? U.fmt(Save.best(g.id)) : CAT[g.cat]) + '</span></div></div>' +
+      '</a>').join('') : '<div class="none">没有找到，换个词试试。</div>';
+    watch($('grid'));
+  }
+  $('chips').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { cat = b.dataset.c; paintLib(); sfx.move(); } });
+  $('q').addEventListener('input', (e) => { q = e.target.value; paintLib(); });
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('[data-go]');
+    if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    e.preventDefault(); go(a.dataset.go);
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.key === '/' && document.activeElement !== $('q')) { e.preventDefault(); $('q').focus(); $('library').scrollIntoView(); }
+  });
+
+  // ---------- 吸引模式：轮播重制精选，真的在跑
+  const AT = FEAT.filter((g) => ['thunder', 'thunderracer', 'flydriver', 'flappy', 'match3', 'fishhunter', 'huddle', 'pawssprint', 'contra'].includes(g.id));
+  let ai = Math.floor(Math.random() * AT.length), attract = null, atTimer = 0;
+  $('dots').innerHTML = AT.map(() => '<b></b>').join('');
+  function showAttract(i) {
+    ai = (i + AT.length) % AT.length;
+    const g = AT[ai], cv = $('attractCv');
+    cv.style.opacity = 0;
+    setTimeout(() => {
+      if (attract) attract.stop();
+      attract = A.demo(g.id, cv, { seed: Date.now() % 9999, loop: true });
+      attract.snapshot(200);
+      attract.play();
+      cv.style.opacity = 1;
+    }, 300);
+    $('attractName').textContent = g.icon + ' ' + g.title;
+    $('attractEn').textContent = (g.en || '').toUpperCase();
+    [...$('dots').children].forEach((d, k) => d.classList.toggle('on', k === ai));
+    clearTimeout(atTimer); atTimer = setTimeout(() => showAttract(ai + 1), 8000);
+  }
+  $('attract').onclick = () => go(AT[ai].id);
+  $('attract').onkeydown = (e) => { if (e.key === 'Enter') go(AT[ai].id); };
+  $('dots').onclick = (e) => { const i = [...$('dots').children].indexOf(e.target); if (i >= 0) showAttract(i); };
+  document.addEventListener('visibilitychange', () => { if (!attract) return; if (document.hidden) attract.stop(); else attract.play(); });
+
+  paintStats(); paintMute(); paintDaily(); paintRail(); paintLib();
+  if (AT.length) showAttract(ai);
+})();
+</script>
+</body>
+</html>
