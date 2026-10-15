@@ -36,32 +36,66 @@
 
 ---
 
-##  全家桶固件使用方法
+## 掌机按键交互机制
 
-本分支提供了内置 **9 合 1 街机大厅启动器** 的整合版全量固件：
+固件内置了街机大厅启动器与统一按键响应：
 
-1. **开机直接进入 ARCADE 街机菜单**：使用 **UP** / **DOWN** 键浏览游戏卡片。
-2. **短按 OK**：进入当前选中的游戏畅玩。
-3. **长按 OK (1.5秒)**：在任何游戏中随时退出并安全返回街机大厅。
+1. **浏览与移动**：在主菜单使用 **UP** / **DOWN** 键上下切换游戏卡片。
+2. **进入游戏**：短按 **OK** 键进入当前选中的游戏。
+3. **安全返回**：在任何游戏进行中，**长按 OK 键（1.5 秒）** 随时退出并安全退回街机大厅。
 4. **全本地运行**：无需配置 Wi-Fi，开机插上即玩。
 
 ---
 
-##  本地编译与刷机
+## 硬件固件获取与刷机指南（免配本机环境）
+
+本项目采用 **Web 模拟器与硬件原生 C 驱动双端同构设计**：
+- **Web 端**（`arcade/` 与 `simulator/`）：纯 HTML5/Canvas 模拟器，在浏览器里随时调试体验。
+- **固件端**（`main/` 与 `components/bsp/`）：纯 C 语言原生驱动与逻辑，编译后刷入 ESP32-C3 掌机。
+
+### 方式一：云端全自动构建获取（推荐，本机零配置）
+
+你的电脑**完全不需要安装任何 ESP-IDF 或 Python 开发环境**，通过 GitHub 自动化即可直接获得固件：
+
+1. **直接从 Release 下载**：
+   前往仓库 [Releases 页面](https://github.com/alexlifexyz/alex-arcade/releases)，下载最新发布的 `FoloToy-AI-Passport-full.bin` 固件。
+2. **从 GitHub Actions 构件下载**：
+   进入仓库的 [Actions 页面](https://github.com/alexlifexyz/alex-arcade/actions/workflows/build-firmware.yml)，找到最新一次 `Build firmware` 的运行记录，在页面底部的 **Artifacts** 区域即可直接下载固件压缩包（如 `passport-main.zip`）。
+
+### 方式二：网页端在线一键刷机（无需命令行）
+
+使用 Chrome 或 Edge 浏览器即可直接完成烧录：
+
+1. 使用 USB-C 数据线将 AI Passport 掌机连接到电脑；
+2. 打开乐鑫官方在线刷机网页：[ESP Web Flasher (esptool-js)](https://espressif.github.io/esptool-js/)；
+3. 点击 **Connect** 按钮，在弹出的系统串口列表中选择设备（通常带有 `usbmodem` 或 `CP210x`）；
+4. 在烧录文件列表中添加下载解压出来的 `FoloToy-AI-Passport-full.bin`，烧录地址填写 **`0x0`**；
+5. 点击 **Program** 开始刷机，进度条走完后重启掌机即可。
+
+### 方式三：开发者本地编译与命令行烧录
+
+如果你在本机安装了 ESP-IDF 5.5.3，也可以在本地调试并编译：
 
 ```bash
 # 1. 激活 ESP-IDF 5.5.3 环境
-. $HOME/esp/esp-idf/export.sh
+source $HOME/esp/esp-idf/export.sh
 
-# 2. 完整构建整合版固件
+# 2. 编译并校验固件
 ./tools/validate.sh --firmware
 
-# 3. 刷入连接的设备 (如 /dev/cu.usbmodem14101)
-esptool.py --chip esp32c3 -b 460800 write_flash 0x0 build/FoloToy-AI-Passport-full.bin
+# 3. 烧录到设备 (例如 /dev/cu.usbmodem14101)
+idf.py -p /dev/cu.usbmodem14101 flash monitor
 ```
 
 ---
 
-##  开源许可
+## 重要：硬件保护区避坑提醒
 
-本项目遵循 Apache-2.0 开源协议。底层硬件驱动与官方文档详见 [docs/README.zh_CN.md](docs/README.zh_CN.md)。
+- **严禁全盘擦除**：切勿使用 `esptool.py erase_flash`，掌机出厂时在 Flash 地址 **`0x356000`** 存放了设备的唯一激活凭证（`cardid`），擦除后将丢失出厂卡密。
+- **推荐刷机方式**：日常使用建议仅写入 App 分区或使用通过校验的安全整合固件包。
+
+---
+
+## 开源许可
+
+本项目遵循 Apache-2.0 开源协议。底层硬件驱动详见 [components/bsp/](components/bsp/)。
