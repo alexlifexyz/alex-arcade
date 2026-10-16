@@ -10,6 +10,8 @@ static const char *TAG = "game_registry";
 
 // 顺序必须和 main/game_catalog.c 的 CATALOG 完全一致，game_registry_validate()
 // 开机时会把这件事核一遍。
+// flysaber / flydriver 为什么暂时不在表里，见 main/game_catalog.c 的注释:
+// 两个页面各有一块 120000 字节的静态画布，一起放不进 DRAM。
 static const game_registry_entry_t REGISTRY[] = {
     // 射击
     { "thunder",      demo_thunder_enter,      demo_thunder_exit,      demo_thunder_key      },
@@ -24,11 +26,8 @@ static const game_registry_entry_t REGISTRY[] = {
     { "thunderracer", demo_thunderracer_enter, demo_thunderracer_exit, demo_thunderracer_key },
     { "pawssprint",   demo_pawssprint_enter,   demo_pawssprint_exit,   demo_pawssprint_key   },
     { "wave",         demo_wave_enter,         demo_wave_exit,         demo_wave_key         },
-    { "flydriver",    demo_flydriver_enter,    demo_flydriver_exit,    demo_flydriver_key    },
     // 益智
     { "match3",       demo_match3_enter,       demo_match3_exit,       demo_match3_key       },
-    // 节奏
-    { "flysaber",     demo_flysaber_enter,     demo_flysaber_exit,     demo_flysaber_key     },
     // 休闲
     { "wind",         demo_wind_enter,         demo_wind_exit,         demo_wind_key         },
     { "flappy",       demo_flappy_enter,       demo_flappy_exit,       demo_flappy_key       },

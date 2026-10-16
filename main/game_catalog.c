@@ -6,6 +6,11 @@
 // 按分类分组：菜单里长按 OK 跳分类靠的就是这个顺序，分组一乱跳转就乱。
 // id 一栏对齐 simulator/catalog.js；name 一栏是掌机菜单上显示的名字，比浏览器
 // 的标题短，因为卡片只有 208 px 宽。
+// flysaber 和 flydriver 的页面都写好了，但暂时不在表里:demo_flysaber.c 和
+// demo_flydriver.c 各自在 .bss 里放了一块 240*250*2 = 120000 字节的静态画布,
+// 两块一起把 dram0_0_seg 顶出 129680 字节,链接都过不去。这块板子没有 PSRAM,
+// 所以得先把画布改成进页面时申请、退页面时释放(或者改小),才能把它们接回来。
+// 这不是 Flash 不够:预算行显示应用分区还剩一大半。
 static const game_catalog_entry_t CATALOG[] = {
     // 射击
     { "thunder",      "Striker",        GAME_CAT_SHOOT  },
@@ -20,11 +25,8 @@ static const game_catalog_entry_t CATALOG[] = {
     { "thunderracer", "Racer",          GAME_CAT_RACE   },
     { "pawssprint",   "Paws Sprint",    GAME_CAT_RACE   },
     { "wave",         "Wave Walker",    GAME_CAT_RACE   },
-    { "flydriver",    "Fly Driver",     GAME_CAT_RACE   },
     // 益智
     { "match3",       "Neon Pop",       GAME_CAT_PUZZLE },
-    // 节奏
-    { "flysaber",     "Fly Saber",      GAME_CAT_RHYTHM },
     // 休闲
     { "wind",         "Wind Rider",     GAME_CAT_CASUAL },
     { "flappy",       "Pixel Flappy",   GAME_CAT_CASUAL },

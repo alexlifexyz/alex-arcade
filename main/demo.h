@@ -54,6 +54,9 @@ void demo_pacman_key(bsp_btn_t btn, bsp_btn_ev_t ev);
 void demo_roulette_enter(void); void demo_roulette_exit(void);
 void demo_roulette_key(bsp_btn_t btn, bsp_btn_ev_t ev);
 
+// flysaber / flydriver 的声明留着，但这两个 .c 暂时不在 main/CMakeLists.txt 里:
+// 两个页面各有一块 120000 字节的静态画布，一起放不进 DRAM。原因见
+// main/game_catalog.c 的注释。
 void demo_flysaber_enter(void); void demo_flysaber_exit(void);
 void demo_flysaber_key(bsp_btn_t btn, bsp_btn_ev_t ev);
 

@@ -6,7 +6,7 @@
 
 ## Unreleased
 
-- 街机菜单改成滚动的，掌机上又多了 6 款能玩：Pixel Flappy、Pac Neon、Shy Fish、Devil Roulette、Fly Saber、Fly Driver，一共 17 款。菜单不再把所有游戏挤进一屏，而是固定显示 8 行足够高的卡片，选中项始终在窗口里、两端循环，标题牌旁边有 `12/17` 位置牌，底部写着选中那款的分类。菜单里长按 `OK` 跳到下一个分类的第一款，17 款之间只隔 6 次短跳；游戏里长按 `OK` 仍然是返回菜单。游戏列表本身从 `main/main.c` 搬到了 `main/game_catalog.c`（id 与浏览器街机对齐、显示名、分类）和 `main/game_registry.c`（`enter` / `exit` / `key` 三个函数），表本身有主机测试盯着，开机时还会核一遍两张表有没有错位并把错位打到日志里。
+- 街机菜单改成滚动的，掌机上又多了 4 款能玩：Pixel Flappy、Pac Neon、Shy Fish、Devil Roulette，一共 15 款。菜单不再把所有游戏挤进一屏，而是固定显示 8 行足够高的卡片，选中项始终在窗口里、两端循环，标题牌旁边有 `12/15` 位置牌，底部写着选中那款的分类。菜单里长按 `OK` 跳到下一个分类的第一款，15 款之间只隔 5 次短跳；游戏里长按 `OK` 仍然是返回菜单。Fly Saber 和 Fly Driver 这次没进去：页面都写完了，但两个各带一块 120000 字节的整屏画布放在静态内存里，两块一起塞不进板子的内存。游戏列表本身从 `main/main.c` 搬到了 `main/game_catalog.c`（id 与浏览器街机对齐、显示名、分类）和 `main/game_registry.c`（`enter` / `exit` / `key` 三个函数），表本身有主机测试盯着，开机时还会核一遍两张表有没有错位并把错位打到日志里。
 - 为继续扩充游戏库打地基：修好了静态门禁（所有文档都链接的 `docs/fork-guide.md` 双语对其实不存在）；把 `tools/validate.sh` 改成按 `tests/test_<name>.c` 与 `main/<name>.c` 配对自动发现主机测试，新游戏自动进门禁（套件数从 24 增到 30 —— `bouncy`、`huddle`、`laser_cat`、`pawssprint_dx`、`splasher` 五个测试写了却从没跑过）；并让 `tools/verify_firmware.py` 打印应用体积相对 3 MiB 预算的占用与剩余空间，同时写进 CI 的 job summary。
 - 新增 `main/game_template_logic.c` / `.h`：一个完整可玩的「接水果」模型，作为新游戏的起点——三条轨道、炸弹、心数、等级、带种子的随机数、固定对象池、零分配，头文件顶部是一块用大白话写的可调数字。配 13 组主机断言，保证它不会烂掉。新增 `docs/development/new-game-guide.zh_CN.md`（从想法到能玩的可重复路径，含和小朋友一起创作的做法）与 `docs/development/arcade-roadmap.zh_CN.md`（游戏库现状、实测体积预算、27 款所需的菜单与注册表设计、分期计划）。
 

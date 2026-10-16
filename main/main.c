@@ -41,7 +41,7 @@ static bool s_games_enabled;       // 按键初始化失败时菜单整列标 [F
 static lv_obj_t *s_menu_scr;
 static lv_obj_t *s_cards[MENU_VISIBLE_ROWS];
 static lv_obj_t *s_rows[MENU_VISIBLE_ROWS];
-static lv_obj_t *s_counter;        // 右上角 "12/17" 位置指示
+static lv_obj_t *s_counter;        // 右上角 "12/15" 位置指示
 static lv_obj_t *s_category;       // 草地左侧显示选中项的分类
 static lv_obj_t *s_mascot;
 static int  s_rows_shown;          // = min(游戏数, MENU_VISIBLE_ROWS)
@@ -127,7 +127,7 @@ static void menu_build(void)
         lv_obj_center(s_rows[row]);
     }
 
-    // 标题牌右边的空位放 "12/17",一眼就知道列表还有多长。
+    // 标题牌右边的空位放 "12/15",一眼就知道列表还有多长。
     lv_obj_t *badge = ui_pixel_panel_create(s_menu_scr, 164, 12, 60, 26, UI_PAPER);
     s_counter = lv_label_create(badge);
     lv_obj_set_style_text_font(s_counter, &lv_font_montserrat_14, 0);
@@ -216,7 +216,7 @@ static void on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user)
             menu_open_selected();
         }
     } else if (ev == BSP_BTN_LONG && btn == BSP_BTN_OK) {
-        // 菜单里长按 OK = 跳到下一个分类的第一项,17 项变成 6 次短跳。
+        // 菜单里长按 OK = 跳到下一个分类的第一项,一长串列表变成几次短跳。
         // 游戏里长按 OK 仍然是返回菜单,语义不冲突:两边不会同时在。
         s_sel = (int)game_catalog_next_category_start((size_t)s_sel);
         menu_refresh();

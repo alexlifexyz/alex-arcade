@@ -42,10 +42,6 @@ idf_component_register(
          "fish_logic.c"
          "demo_roulette.c"
          "roulette_logic.c"
-         "demo_flysaber.c"
-         "flysaber_logic.c"
-         "demo_flydriver.c"
-         "flydriver_logic.c"
     INCLUDE_DIRS "."
     REQUIRES bsp bt esp_event esp_hw_support esp_netif esp_timer esp_wifi nvs_flash
 )
