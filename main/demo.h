@@ -1,15 +1,9 @@
 // main/demo.h —— 每个演示页实现的统一接口。
-// 新增一个演示页 = 实现这三个函数 + 在 main.c 的 DEMOS[] 里加一行。
+// 新增一个演示页 = 实现这三个函数 + 在 main/game_catalog.c 和
+// main/game_registry.c 各加一行;菜单表不在 main.c 里了。
 #pragma once
 
 #include "bsp_button.h"
-
-typedef struct {
-    const char *name;
-    void (*enter)(void);                          // 建自己的屏并载入
-    void (*exit)(void);                           // 删屏、停定时器、释放资源
-    void (*key)(bsp_btn_t btn, bsp_btn_ev_t ev);  // 收按键(长按确定已被 main 拦截)
-} demo_entry_t;
 
 // 各演示页(定义在各自的 .c 里)
 void demo_display_enter(void); void demo_display_exit(void);
@@ -56,6 +50,15 @@ void demo_fish_key(bsp_btn_t btn, bsp_btn_ev_t ev);
 
 void demo_pacman_enter(void); void demo_pacman_exit(void);
 void demo_pacman_key(bsp_btn_t btn, bsp_btn_ev_t ev);
+
+void demo_roulette_enter(void); void demo_roulette_exit(void);
+void demo_roulette_key(bsp_btn_t btn, bsp_btn_ev_t ev);
+
+void demo_flysaber_enter(void); void demo_flysaber_exit(void);
+void demo_flysaber_key(bsp_btn_t btn, bsp_btn_ev_t ev);
+
+void demo_flydriver_enter(void); void demo_flydriver_exit(void);
+void demo_flydriver_key(bsp_btn_t btn, bsp_btn_ev_t ev);
 
 void demo_match3_enter(void); void demo_match3_exit(void);
 void demo_match3_key(bsp_btn_t btn, bsp_btn_ev_t ev);

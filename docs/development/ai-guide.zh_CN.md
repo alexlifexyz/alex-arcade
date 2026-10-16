@@ -46,7 +46,8 @@ Natural-language requirement
 
 - `main/demo.h` 中的声明；
 - `main/CMakeLists.txt` 中的源文件；
-- `main/main.c` 的 `DEMOS[]` 注册；
+- `main/game_catalog.c` 的 id、显示名和分类；
+- `main/game_registry.c` 同一行号的三个函数指针（`main/main.c` 只管菜单行为，不再持有游戏列表）；
 - 若有新的可选外设，菜单的初始化状态与失败降级。
 
 只有多个应用都会使用的硬件能力才进入 `components/bsp`。BSP API 需要说明阻塞性、线程上下文、内存所有权、失败值和初始化顺序；引脚或 I2C 地址只能加入 `bsp_pins.h`。

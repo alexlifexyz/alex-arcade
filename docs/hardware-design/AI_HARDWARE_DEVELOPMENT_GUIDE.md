@@ -190,9 +190,9 @@ Review at least the 24 KB LVGL pool, 9.6 KB LCD DMA buffer, I2S DMA, 96 KB demo 
 
 For reusable hardware capability, add `bsp_<feature>.h` and its implementation, keep constants in `bsp_pins.h`, update component CMake/dependencies, return `esp_err_t`, log actionable pin/address context, and document threading, blocking, ownership, initialization, and failure behavior.
 
-For a validation page, implement `enter`, `exit`, and `key` in `main/demo_<feature>.c`; declare it in `demo.h`, list it in CMake, and register it in `DEMOS[]`. Create/load a page-owned screen on entry. Stop workers/timers before deleting it on exit. Keep UI text in English, put slow work in worker tasks, lock LVGL updates, and preserve global OK-long-press return behavior.
+For a validation page, implement `enter`, `exit`, and `key` in `main/demo_<feature>.c`; declare it in `demo.h`, list it in CMake, add its id, display name, and category to `main/game_catalog.c`, and register its three functions at the matching row of `main/game_registry.c`. Create/load a page-owned screen on entry. Stop workers/timers before deleting it on exit. Keep UI text in English, put slow work in worker tasks, lock LVGL updates, and preserve global OK-long-press return behavior.
 
-Menu initialization status arrays implicitly follow `DEMOS[]` order; update and review them together.
+The catalog and the registry are a 1:1, same-order mapping, and `game_registry_validate()` logs every mismatch at startup. The catalog is grouped by category because an `OK` long-press in the menu jumps to the next category.
 
 ## 12. Development environment
 

@@ -266,13 +266,13 @@ SOC 准确度取决于电芯与 profile 的匹配程度。本驱动给出的是�
 新增硬件验证页：
 
 1. 创建 `main/demo_<feature>.c`，实现 `enter`、`exit`、`key`。
-2. 在 `main/demo.h` 声明，在 `main/CMakeLists.txt` 加源文件，在 `main.c` 的 `DEMOS[]` 注册。
+2. 在 `main/demo.h` 声明，在 `main/CMakeLists.txt` 加源文件，在 `main/game_catalog.c` 加 id、显示名和分类，在 `main/game_registry.c` 的同一行号注册三个函数。
 3. `enter` 创建并加载自己的 screen；`exit` 先停任务/定时器，再删 screen 和清空指针。
 4. 页面文字保持英文；说明性注释可用中文。
 5. 慢操作放工作任务，结果通过 LVGL 锁更新界面。
 6. 保留 OK 长按返回这一全局交互，不在页面重复实现。
 
-如果菜单项依赖新外设，还需扩展 `s_ok[]` 初始化与失败禁用逻辑。注意当前数组索引与 `DEMOS[]` 顺序隐式对应，修改顺序时必须同步核对。
+目录表和注册表是同序一一对应，`game_registry_validate()` 在开机时会把错位全部打到日志里。目录表按分类分组排列，因为菜单里长按 OK 要跳到下一个分类。
 
 ## 12. 开发环境搭建
 

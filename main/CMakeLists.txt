@@ -1,5 +1,7 @@
 idf_component_register(
     SRCS "main.c"
+         "game_catalog.c"
+         "game_registry.c"
          "ui_pixel.c"
          "ui_pixel_math.c"
          "demo_display.c"
@@ -32,6 +34,18 @@ idf_component_register(
          "wave_logic.c"
          "demo_wind.c"
          "wind_logic.c"
+         "demo_flappy.c"
+         "flappy_logic.c"
+         "demo_pacman.c"
+         "pacman_logic.c"
+         "demo_fish.c"
+         "fish_logic.c"
+         "demo_roulette.c"
+         "roulette_logic.c"
+         "demo_flysaber.c"
+         "flysaber_logic.c"
+         "demo_flydriver.c"
+         "flydriver_logic.c"
     INCLUDE_DIRS "."
     REQUIRES bsp bt esp_event esp_hw_support esp_netif esp_timer esp_wifi nvs_flash
 )
