@@ -197,8 +197,11 @@ def main() -> int:
     errors: list[str] = []
     files = text_files()
     check_required_files(errors)
-    check_markdown_links(files, errors)
-    check_document_languages(files, errors)
+    # .ai/ holds the owner's private Chinese hand-off notes (work-system protocol);
+    # they are not public documentation, so only the language and link rules skip them.
+    docs = [path for path in files if path.relative_to(ROOT).parts[:1] != (".ai",)]
+    check_markdown_links(docs, errors)
+    check_document_languages(docs, errors)
     check_action_pins(errors)
     check_issue_forms(errors)
     check_sensitive_content(files, errors)
