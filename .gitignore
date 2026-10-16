@@ -12,3 +12,6 @@ __pycache__/
 .DS_Store
 build_cloud/
 *.bin
+
+# Alex work-system 交接文件（中文，不受本仓库英文默认 + zh_CN 配对门禁约束）
+.ai/
