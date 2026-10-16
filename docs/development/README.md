@@ -10,6 +10,11 @@ This directory contains AI Passport engineering rules and reusable workflows, gr
 
 - [ai-guide.md](ai-guide.md): AI-assisted development workflow.
 
+## Arcade product work
+
+- [new-game-guide.md](new-game-guide.md): the repeatable path from an idea to a playable title, including creating one together with a child.
+- [arcade-roadmap.md](arcade-roadmap.md): current state of the game library, the application size budget, and the phased plan for putting every title on the device.
+
 ## Engineering
 
 - [environment-setup.md](engineering/environment-setup.md): clean-machine bootstrap for AI agents, including international and mainland China download routes.

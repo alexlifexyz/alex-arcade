@@ -49,12 +49,23 @@ if ! curl --fail --location --silent --show-error --retry 3 --retry-all-errors \
     gh release download "v${version}" --repo rhysd/actionlint \
         --pattern "${archive_name}" --dir "${destination}"
 fi
-if command -v sha256sum >/dev/null 2>&1; then
-    printf '%s  %s\n' "${checksum}" "${archive_path}" | sha256sum --check --status
-elif command -v shasum >/dev/null 2>&1; then
-    [[ "$(shasum -a 256 "${archive_path}" | awk '{print $1}')" == "${checksum}" ]]
+# Compare the digest by value instead of using GNU --check: recent macOS ships
+# its own /sbin/sha256sum that prints the same digest but rejects --check, which
+# made the complete static gate unrunnable on a Mac. Every tool below prints the
+# hash as the first field, except openssl, which prints it last.
+actual_checksum=""
+if command -v shasum >/dev/null 2>&1; then
+    actual_checksum="$(shasum -a 256 "${archive_path}" | awk '{print $1}')"
+elif command -v sha256sum >/dev/null 2>&1; then
+    actual_checksum="$(sha256sum "${archive_path}" | awk '{print $1}')"
+elif command -v openssl >/dev/null 2>&1; then
+    actual_checksum="$(openssl dgst -sha256 "${archive_path}" | awk '{print $NF}')"
 else
     echo "No SHA-256 verification tool is available" >&2
+    exit 1
+fi
+if [[ "${actual_checksum}" != "${checksum}" ]]; then
+    echo "actionlint checksum mismatch: expected ${checksum}, got ${actual_checksum}" >&2
     exit 1
 fi
 tar -xzf "${archive_path}" -C "${destination}" actionlint

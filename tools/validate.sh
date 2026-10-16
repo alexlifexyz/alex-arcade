@@ -8,9 +8,48 @@ usage() {
     echo "Usage: $0 [--all|--static|--firmware]" >&2
 }
 
+# Every tests/test_<name>.c is paired with main/<name>.c by convention, so a new
+# game joins the gate as soon as its logic module and test file exist. Nothing
+# here needs editing when a game is added; a test without its paired source is
+# an error rather than a silently skipped check.
+# Kept out of run_host_tests so the EXIT trap can still read it: a RETURN trap
+# fires after the function's locals are gone, which trips `set -u`.
+host_test_dir=""
+cleanup_host_test_dir() {
+    case "${host_test_dir}" in
+        /tmp/ai-passport-host-tests.*) rm -rf -- "${host_test_dir}" ;;
+    esac
+}
+
+run_host_tests() {
+    local test_file stem source_file passed=0
+
+    host_test_dir="$(mktemp -d /tmp/ai-passport-host-tests.XXXXXX)"
+    trap cleanup_host_test_dir EXIT
+
+    for test_file in tests/test_*.c; do
+        stem="$(basename "${test_file}" .c)"
+        source_file="main/${stem#test_}.c"
+        if [[ ! -f "${source_file}" ]]; then
+            echo "ERROR: ${test_file} has no paired source ${source_file}" >&2
+            return 1
+        fi
+        # -lm covers the trigonometry several game models use; it is harmless
+        # for the integer-only modules.
+        "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
+            "${test_file}" "${source_file}" -lm -o "${host_test_dir}/${stem}"
+        "${host_test_dir}/${stem}"
+        passed=$((passed + 1))
+    done
+
+    python3 tests/test_verify_firmware.py
+    passed=$((passed + 1))
+
+    echo "Host tests: PASS (${passed} suites)"
+}
+
 run_static_checks() {
     local actionlint_bin
-    local test_dir
 
     python3 tools/check_repo.py
 
@@ -23,102 +62,7 @@ run_static_checks() {
     fi
     "${actionlint_bin}" -color .github/workflows/*.yml
 
-    test_dir="$(mktemp -d /tmp/ai-passport-host-tests.XXXXXX)"
-    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
-        tests/test_ui_pixel_math.c main/ui_pixel_math.c \
-        -o "${test_dir}/test_ui_pixel_math"
-    "${test_dir}/test_ui_pixel_math"
-    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
-        tests/test_roulette_logic.c main/roulette_logic.c \
-        -o "${test_dir}/test_roulette_logic"
-    "${test_dir}/test_roulette_logic"
-    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
-        tests/test_thunder_logic.c main/thunder_logic.c \
-        -o "${test_dir}/test_thunder_logic"
-    "${test_dir}/test_thunder_logic"
-    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
-        tests/test_flysaber_logic.c main/flysaber_logic.c \
-        -o "${test_dir}/test_flysaber_logic"
-    "${test_dir}/test_flysaber_logic"
-    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
-        tests/test_flydriver_logic.c main/flydriver_logic.c \
-        -o "${test_dir}/test_flydriver_logic"
-    "${test_dir}/test_flydriver_logic"
-    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
-        tests/test_adventure_logic.c main/adventure_logic.c \
-        -o "${test_dir}/test_adventure_logic"
-    "${test_dir}/test_adventure_logic"
-    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
-        tests/test_pong_logic.c main/pong_logic.c \
-        -o "${test_dir}/test_pong_logic"
-    "${test_dir}/test_pong_logic"
-    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
-        tests/test_contra_logic.c main/contra_logic.c \
-        -o "${test_dir}/test_contra_logic"
-    "${test_dir}/test_contra_logic"
-    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
-        tests/test_flappy_logic.c main/flappy_logic.c \
-        -o "${test_dir}/test_flappy_logic"
-    "${test_dir}/test_flappy_logic"
-    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
-        tests/test_worldtime_logic.c main/worldtime_logic.c \
-        -o "${test_dir}/test_worldtime_logic"
-    "${test_dir}/test_worldtime_logic"
-    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
-        tests/test_sparkler_logic.c main/sparkler_logic.c \
-        -o "${test_dir}/test_sparkler_logic"
-    "${test_dir}/test_sparkler_logic"
-    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
-        tests/test_thunderracer_logic.c main/thunderracer_logic.c \
-        -o "${test_dir}/test_thunderracer_logic"
-    "${test_dir}/test_thunderracer_logic"
-    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
-        tests/test_battlecity_logic.c main/battlecity_logic.c \
-        -o "${test_dir}/test_battlecity_logic"
-    "${test_dir}/test_battlecity_logic"
-    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
-        tests/test_pacman_logic.c main/pacman_logic.c \
-        -o "${test_dir}/test_pacman_logic"
-    "${test_dir}/test_pacman_logic"
-    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
-        tests/test_fish_logic.c main/fish_logic.c \
-        -o "${test_dir}/test_fish_logic"
-    "${test_dir}/test_fish_logic"
-    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
-        tests/test_match3_logic.c main/match3_logic.c \
-        -o "${test_dir}/test_match3_logic"
-    "${test_dir}/test_match3_logic"
-    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
-        tests/test_geartrooper_logic.c main/geartrooper_logic.c \
-        -o "${test_dir}/test_geartrooper_logic"
-    "${test_dir}/test_geartrooper_logic"
-    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
-        tests/test_cyber_runner_logic.c main/cyber_runner_logic.c \
-        -o "${test_dir}/test_cyber_runner_logic"
-    "${test_dir}/test_cyber_runner_logic"
-    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
-        tests/test_pawssprint_logic.c main/pawssprint_logic.c \
-        -lm -o "${test_dir}/test_pawssprint_logic"
-    "${test_dir}/test_pawssprint_logic"
-    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
-        tests/test_smash_logic.c main/smash_logic.c \
-        -lm -o "${test_dir}/test_smash_logic"
-    "${test_dir}/test_smash_logic"
-    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
-        tests/test_bubble_logic.c main/bubble_logic.c \
-        -lm -o "${test_dir}/test_bubble_logic"
-    "${test_dir}/test_bubble_logic"
-    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
-        tests/test_wind_logic.c main/wind_logic.c \
-        -lm -o "${test_dir}/test_wind_logic"
-    "${test_dir}/test_wind_logic"
-    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
-        tests/test_wave_logic.c main/wave_logic.c \
-        -lm -o "${test_dir}/test_wave_logic"
-    "${test_dir}/test_wave_logic"
-    python3 tests/test_verify_firmware.py
-    rm -rf "${test_dir}"
-    echo "Host tests: PASS"
+    run_host_tests
 }
 
 run_firmware_checks() (

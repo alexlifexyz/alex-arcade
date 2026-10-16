@@ -19,6 +19,11 @@
 
 - [ai-guide.zh_CN.md](ai-guide.zh_CN.md)：AI 开发工作流（面向 AI 编程助手：上下文建立、需求拆解、BSP 边界、验收交付格式）。
 
+## 街机产品工作
+
+- [new-game-guide.zh_CN.md](new-game-guide.zh_CN.md)：从一个想法到一款能玩的游戏的可重复路径，含和小朋友一起创作的做法。
+- [arcade-roadmap.zh_CN.md](arcade-roadmap.zh_CN.md)：游戏库现状、应用体积预算、把全部游戏搬上掌机的分期计划。
+
 ## 工程约定（engineering）
 
 - [environment-setup.zh_CN.md](engineering/environment-setup.zh_CN.md)：AI 在全新机器上的环境引导，包含国际与中国大陆下载线路。

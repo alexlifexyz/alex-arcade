@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import struct
 import sys
 from dataclasses import dataclass
@@ -112,7 +113,32 @@ def verify_protected_layout(merged: bytes, build_dir: Path) -> None:
     if any(byte != 0xFF for byte in payload):
         raise ValueError("merged artifact contains forbidden cardid payload bytes")
 
-    print(f"Protected firmware layout: PASS (app {app_size} / {APP_MAX_SIZE} bytes)")
+    report_app_budget(app_size)
+
+
+def report_app_budget(app_size: int) -> None:
+    """Print the application size against the 3 MB budget.
+
+    Every added game grows the factory partition, so the headroom is the number
+    that decides whether another title still fits. CI also writes the line to
+    the job summary when GITHUB_STEP_SUMMARY is available, so the budget is
+    visible without opening the build log.
+    """
+    used_percent = app_size * 100.0 / APP_MAX_SIZE
+    headroom = APP_MAX_SIZE - app_size
+    line = (
+        f"App budget: {app_size} / {APP_MAX_SIZE} bytes "
+        f"({used_percent:.1f}% used, {headroom / 1024:.0f} KiB free)"
+    )
+    print(f"Protected firmware layout: PASS ({line})")
+
+    summary = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary:
+        try:
+            with open(summary, "a", encoding="utf-8") as handle:
+                handle.write(f"- {line}\n")
+        except OSError:
+            pass
 
 
 def main() -> int:
