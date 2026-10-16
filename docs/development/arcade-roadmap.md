@@ -57,7 +57,9 @@ measurement; the authoritative number is the budget line that
 Protected firmware layout: PASS (App budget: N / 3145728 bytes (X% used, Y KiB free))
 ```
 
-Read that line before assuming there is or is not room.
+Read that line before assuming there is or is not room. At 15 titles it reads
+`1494896 / 3145728 bytes (47.5% used, 1612 KiB free)`, so flash has room for
+roughly as much application again as the arcade currently is.
 
 **The menu was the first real blocker, and it is cleared.** `main/main.c` used
 to render every entry as a fixed card and shrink the card height as the count
