@@ -92,6 +92,18 @@ cc -std=c11 -Wall -Wextra -Werror -Imain \
   tests/test_mygame_logic.c main/mygame_logic.c -lm -o /tmp/t && /tmp/t
 ```
 
+Stay inside ISO C in the test as well as the model. `M_PI` and its siblings are
+not part of ISO C: Apple libc declares them under `-std=c11` and glibc does not,
+so a test that uses one compiles on a Mac and fails in CI. Guard it the way the
+models do, with `#ifndef M_PI`. On macOS, `-D_ANSI_SOURCE` reproduces the
+stricter header behaviour and catches this class before pushing (it also hides
+C99 functions such as `snprintf`, so treat only the macro errors as real):
+
+```bash
+cc -std=c11 -D_ANSI_SOURCE -Wall -Wextra -Werror -Imain \
+  tests/test_mygame_logic.c main/mygame_logic.c -lm -o /tmp/t
+```
+
 ### 3. Write the view
 
 Copy the nearest existing page. `main/demo_match3.c` is a compact grid page,

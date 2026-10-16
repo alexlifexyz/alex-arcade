@@ -7,6 +7,13 @@
 #include <math.h>
 #include <string.h>
 
+// M_PI 不是 ISO C 的一部分。glibc 在 -std=c11（严格 ANSI）下不声明它，Apple libc
+// 会，所以漏掉这个守卫时本机能过、Linux CI 过不了。配对的 main/bouncy_logic.c
+// 用的是同一个守卫。
+#ifndef M_PI
+#define M_PI 3.14159265358979323846f
+#endif
+
 #define TEST_EPS 1e-3f
 
 static void test_initialization_and_lifecycle(void)

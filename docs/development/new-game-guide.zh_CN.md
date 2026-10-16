@@ -82,6 +82,17 @@ cc -std=c11 -Wall -Wextra -Werror -Imain \
   tests/test_mygame_logic.c main/mygame_logic.c -lm -o /tmp/t && /tmp/t
 ```
 
+测试本身也要待在 ISO C 里，不只是模型。`M_PI` 这类宏不属于 ISO C：Apple libc 在
+`-std=c11` 下声明它，glibc 不声明，所以用了它的测试在 Mac 上能过、到 CI 就挂。
+照模型层的写法加 `#ifndef M_PI` 守卫。在 macOS 上用 `-D_ANSI_SOURCE` 能复现更严格的
+头文件行为，推之前就能抓到这一类问题（它同时会隐藏 `snprintf` 这类 C99 函数，
+所以只把宏相关的报错当真）：
+
+```bash
+cc -std=c11 -D_ANSI_SOURCE -Wall -Wextra -Werror -Imain \
+  tests/test_mygame_logic.c main/mygame_logic.c -lm -o /tmp/t
+```
+
 ### 3. 再写渲染层
 
 就近抄一个现成页面：`main/demo_match3.c` 是紧凑的网格页，`main/demo_flappy.c` 是
