@@ -2,15 +2,18 @@
   <strong>简体中文</strong> · <a href="README.md">English</a>
 </p>
 
-#  Alex Arcade 掌机游戏中心 (Game Hub)
+# Alex Arcade 掌机游戏中心 (Game Hub)
 
 > 为 **FoloToy AI Passport** 打造的复古街机与治愈萌宠游戏合集！每款游戏均配备**独立专属页面**与**开机即玩**的单机体验。
+
+- 在线街机大厅直达：[https://alexlifexyz.github.io/alex-arcade/](https://alexlifexyz.github.io/alex-arcade/)
+- 固件与 Release 下载：[https://github.com/alexlifexyz/alex-arcade/releases](https://github.com/alexlifexyz/alex-arcade/releases)
 
 ![Arcade Hall](arcade/assets/hall.jpg)
 
 ---
 
-##  游戏专页目录 (独立分享链接)
+## 游戏专页目录 (独立分享链接)
 
 发给朋友时，可直接发送下方任意游戏的独立目录 URL。点开即见专属海报、操作指南与安装方式：
 
