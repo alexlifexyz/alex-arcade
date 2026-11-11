@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-mode="full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Alex 游戏百宝箱 · 网页播放器</title>
+  <style>
+    :root {
+      --bg: #0b0d13;
+      --panel: #131722;
+      --border: #2b344d;
+      --text: #f0f4f8;
+      --sub: #94a3b8;
+      --accent: #00d2ff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow: hidden;
+    }
+    .topbar {
+      width: 100%;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      z-index: 5;
+    }
+    .brand { font-size: 15px; font-weight: 700; letter-spacing: .5px; }
+    .brand small { display: block; font-size: 11px; font-weight: 400; color: var(--sub); margin-top: 3px; }
+    .controls { display: flex; flex-wrap: wrap; align-items: center; }
+    .game-select {
+      background: #1c2233;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 13px;
+      max-width: 230px;
+      margin-right: 10px;
+    }
+    .mode-switch, .mini-switch { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .mode-btn, .mini-btn {
+      background: #1c2233;
+      color: var(--sub);
+      border: 0;
+      border-right: 1px solid var(--border);
+      padding: 8px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .mode-btn:last-child, .mini-btn:last-child { border-right: 0; }
+    .mode-btn.active, .mini-btn.active { background: var(--accent); color: #0b0d13; font-weight: 700; }
+    #btn-browser-fullscreen { margin-left: 10px; }
+
+    .stage {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      overflow: hidden;
+    }
+    /* 掌机模式：iframe 原样显示整台掌机 */
+    .frame-box {
+      width: 390px;
+      height: 780px;
+      max-width: 100%;
+      max-height: 100%;
+      background: #05060a;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 18px 60px rgba(0, 0, 0, .55);
+    }
+    #game-frame { width: 100%; height: 100%; border: 0; display: block; }
+
+    /* 纯画面 / 虚拟键模式：iframe 必须保持「可见」，否则 rAF 被节流、
+       CPS1 的 tick 里还有 document.hidden 早退。缩到 2px 透明留在视口内。 */
+    body[data-mode="full"] .frame-box,
+    body[data-mode="virtual"] .frame-box {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 2px;
+      height: 2px;
+      max-height: none;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      opacity: .001;
+      pointer-events: none;
+    }
+    .full-stage { display: none; position: absolute; inset: 0; background: #000; }
+    body[data-mode="full"] .full-stage,
+    body[data-mode="virtual"] .full-stage { display: block; }
+
+    /* 与游戏画面等尺寸的容器：功能键、虚拟键都贴着画面摆，不再飘到舞台角落 */
+    #screen-wrap {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      /* 上移 22px，给底部细条工具留一条黑边，不遮挡游戏画面 */
+      transform: translate(-50%, calc(-50% - 22px));
+    }
+    #full-canvas {
+      position: relative;
+      display: block;
+      /* 只保留 pixelated：crisp-edges 写在后面会覆盖它，将来若改用 CSS 放大就会变糊 */
+      image-rendering: pixelated;
+      background: #000;
+    }
+    /* 宽屏时贴在画面右侧黑边（完全不遮 HUD）；黑边不够就退回画面内右上角 */
+    .full-actions { position: absolute; right: 8px; top: 8px; display: flex; }
+    .full-actions.outside { left: calc(100% + 8px); right: auto; top: 0; flex-direction: column; }
+    .full-actions.outside .capsule-btn { margin-left: 0; margin-bottom: 8px; }
+    .capsule-btn {
+      background: rgba(12, 15, 22, .5);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, .35);
+      border-radius: 999px;
+      padding: 9px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-left: 8px;
+      cursor: pointer;
+      touch-action: none;
+    }
+    .capsule-btn:active { background: rgba(0, 210, 255, .55); }
+
+    /* 虚拟键层（覆盖画面区域，而不是整个舞台） */
+    .virtual-layer { display: none; position: absolute; inset: 0; pointer-events: none; }
+    body[data-mode="virtual"] .virtual-layer { display: block; }
+    .vkey {
+      position: absolute;
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: rgba(240, 246, 255, .18);
+      border: 1px solid rgba(255, 255, 255, .45);
+      color: #fff;
+      font-size: 12px;
+      line-height: 1.25;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: auto;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .vkey small { font-size: 10px; opacity: .75; }
+    .vkey.down { background: rgba(0, 210, 255, .55); }
+    .vkey[data-kind="capsule"] { width: 64px; height: 32px; border-radius: 999px; font-size: 11px; }
+    .vkey[data-kind="direction"] { background: rgba(240, 246, 255, .12); }
+
+    /* 纯画面模式下的细条工具 */
+    .overlay-tools {
+      position: absolute;
+      left: 50%;
+      bottom: 12px;
+      transform: translateX(-50%);
+      display: flex;
+      background: rgba(12, 15, 22, .78);
+      border: 1px solid rgba(255, 255, 255, .18);
+      border-radius: 999px;
+      padding: 5px 8px;
+      white-space: nowrap;
+    }
+    .overlay-tools button {
+      background: transparent;
+      color: #e6edf6;
+      border: 0;
+      border-right: 1px solid rgba(255, 255, 255, .16);
+      padding: 5px 10px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .overlay-tools button:last-child { border-right: 0; }
+    .overlay-tools button.active { color: var(--accent); font-weight: 700; }
+
+    .notice { font-size: 12px; color: var(--sub); padding: 0 16px 6px; text-align: center; flex-shrink: 0; }
+    /* 调试信息默认收起，只留一行手柄状态 */
+    .footer {
+      width: 100%;
+      border-top: 1px solid var(--border);
+      padding: 6px 16px;
+      font-size: 12px;
+      color: var(--sub);
+      line-height: 1.6;
+      flex-shrink: 0;
+      max-height: 40vh;
+      overflow: auto;
+    }
+    .status-line { display: flex; align-items: center; flex-wrap: wrap; }
+    .status-line > span { margin-right: 12px; }
+    #debug-panel { margin-left: auto; }
+    #debug-panel summary { cursor: pointer; color: var(--sub); font-size: 11px; }
+    #debug-panel[open] { width: 100%; margin-top: 6px; }
+    #debug-panel[open] summary { margin-bottom: 4px; }
+    #bridge-status { font-weight: 700; }
+    #bridge-status.ready { color: #4ade80; }
+    #bridge-status.error { color: #f87171; }
+    #diag { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all; white-space: pre-wrap; }
+    @media (max-width: 620px) {
+      .topbar { padding: 8px 10px; }
+      .game-select { max-width: 100%; margin: 6px 0 0; }
+      .mode-switch, #btn-browser-fullscreen { margin-top: 6px; }
+      .frame-box { width: 100%; height: 100%; border-radius: 0; }
+      .overlay-tools { max-width: 100%; overflow-x: auto; }
+      .vkey { width: 52px; height: 52px; }
+    }
+  </style>
+  <script>
+    // 全局异常可视上屏，杜绝静默黑屏
+    window.addEventListener('error', function (e) {
+      var box = document.getElementById('diag');
+      if (box) box.textContent += ' [异常] ' + (e.message || e) + '\n';
+    });
+    window.addEventListener('unhandledrejection', function (e) {
+      var box = document.getElementById('diag');
+      if (box) box.textContent += ' [未处理拒绝] ' + e.reason + '\n';
+    });
+  </script>
+</head>
+<body data-mode="full">
+  <header class="topbar">
+    <div class="brand">
+      Alex 游戏百宝箱 · 网页播放器
+      <small id="game-label">载入中…</small>
+    </div>
+    <div class="controls">
+      <select id="game-select" class="game-select" aria-label="选择游戏"></select>
+      <div class="mode-switch" id="mode-switch">
+        <button type="button" class="mode-btn" data-mode="full">全屏</button>
+        <button type="button" class="mode-btn" data-mode="virtual">虚拟键</button>
+        <button type="button" class="mode-btn" data-mode="deck">掌机</button>
+      </div>
+      <button type="button" class="mini-btn" id="btn-browser-fullscreen">浏览器全屏</button>
+    </div>
+  </header>
+
+  <main class="stage" id="stage">
+    <div class="frame-box" id="frame-box">
+      <!-- 同源 iframe：父页可直接读取 contentWindow.GGEMU_CORE，不需要 postMessage -->
+      <iframe id="game-frame" src="" allow="autoplay; fullscreen" title="游戏画面"></iframe>
+    </div>
+
+    <div class="full-stage" id="full-stage">
+      <div id="screen-wrap">
+        <canvas id="full-canvas"></canvas>
+        <div class="full-actions" id="full-actions"></div>
+        <div class="virtual-layer" id="virtual-layer"></div>
+      </div>
+      <div class="overlay-tools" id="overlay-tools">
+        <button type="button" id="tool-save">存档</button>
+        <button type="button" id="tool-load">读档</button>
+        <button type="button" id="tool-reset">复位</button>
+        <button type="button" id="tool-sound">声音</button>
+        <button type="button" id="tool-fast">3× 加速</button>
+        <button type="button" id="tool-record">59s 录屏</button>
+      </div>
+    </div>
+  </main>
+
+  <p class="notice" id="mode-notice">载入中… 点一下画面用键盘；顶栏可切「虚拟键」「掌机」。</p>
+
+  <footer class="footer">
+    <div class="status-line">
+      <span id="gamepad-status">检测中…</span>
+      <details id="debug-panel">
+        <summary>调试</summary>
+        <div>输入桥：<span id="bridge-status" class="">bridge-loading</span></div>
+        <div id="diag">等待 iframe 载入…</div>
+      </details>
+    </div>
+  </footer>
+
+  <script src="shared/web/games.js"></script>
+  <script src="shared/web/input-bridge.js"></script>
+  <script src="shared/web/virtual-keys.js"></script>
+  <script src="shared/web/gamepad.js"></script>
+  <script src="shared/web/player.js"></script>
+</body>
+</html>

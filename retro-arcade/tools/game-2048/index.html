@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>2048 经典高分挑战</title>
+  <link rel="stylesheet" href="./assets/style.css" />
+</head>
+<body>
+  <div id="debug-error-box" class="debug-error-box"></div>
+  <div id="toast" class="toast"></div>
+
+  <div id="app">
+    <!-- 顶部状态栏：由 CSS padding-top 彻底避让小红书顶部返回键与右上角胶囊 (约 92px) -->
+    <header class="header">
+      <div class="brand">
+        <div class="brand-title">2048</div>
+        <div class="brand-sub">全国高分排行榜挑战</div>
+      </div>
+      <div class="scores-wrap">
+        <div class="score-box">
+          <div class="score-label">SCORE</div>
+          <div class="score-value" id="current-score">0</div>
+          <div class="score-addition" id="score-addition">+4</div>
+        </div>
+        <div class="score-box">
+          <div class="score-label">BEST</div>
+          <div class="score-value" id="best-score">0</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- 清晰优雅的滑动手势指引 -->
+    <div class="swipe-hint">点击下方方向键或滑动屏幕，合并相同数字方块</div>
+
+    <!-- 中间主对弈区：自适应黄金大棋盘，饱满居中 -->
+    <section class="stage-area" id="stage-area">
+      <main id="game-container">
+        <div class="grid-container">
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+          <div class="grid-cell"></div>
+        </div>
+        <div class="tile-container" id="tile-container"></div>
+      </main>
+    </section>
+
+    <!-- 四向极速实体按键面板 (大拇指黄金操控区，点击即走，绝不漏按) -->
+    <div class="dpad-panel" id="dpad-panel">
+      <button class="dpad-btn" id="btn-dir-left" type="button" aria-label="向左滑动">
+        <span class="dpad-arrow">←</span>
+        <span class="dpad-text">左</span>
+      </button>
+      <button class="dpad-btn" id="btn-dir-up" type="button" aria-label="向上滑动">
+        <span class="dpad-arrow">↑</span>
+        <span class="dpad-text">上</span>
+      </button>
+      <button class="dpad-btn" id="btn-dir-down" type="button" aria-label="向下滑动">
+        <span class="dpad-arrow">↓</span>
+        <span class="dpad-text">下</span>
+      </button>
+      <button class="dpad-btn" id="btn-dir-right" type="button" aria-label="向右滑动">
+        <span class="dpad-arrow">→</span>
+        <span class="dpad-text">右</span>
+      </button>
+    </div>
+
+    <!-- 底部整齐饱满的大按键控制面板 (双层标准布局) -->
+    <footer class="controls-panel">
+      <!-- 第一层：辅助控制 (高度 44px，极易点击) -->
+      <div class="controls-row">
+        <button class="ctrl-btn" id="btn-bar-undo" type="button">撤回 ↶</button>
+        <button class="ctrl-btn" id="btn-theme" type="button">奶咖</button>
+        <button class="ctrl-btn" id="btn-guide" type="button">秘籍攻略</button>
+        <button class="ctrl-btn" id="btn-bar-restart" type="button">新一局</button>
+      </div>
+      <!-- 第二层：核心控制 (复位、全国榜高光、声音) -->
+      <div class="controls-row controls-row-quad">
+        <button class="ctrl-btn" id="btn-reset" type="button">复位</button>
+        <button class="ctrl-btn" id="btn-leaderboard" type="button">排行榜</button>
+        <button class="ctrl-btn btn-share" id="btn-share" type="button">发笔记</button>
+        <button class="ctrl-btn" id="btn-sound" type="button">声音</button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- 全国实时排行榜弹窗 (初始内联 display: none 确保 0 遮挡) -->
+  <div id="leaderboard-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">全国 2048 高分排行榜</div>
+        <button id="leaderboard-close" class="modal-close-btn" type="button">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="my-rank-banner">
+          <div class="my-rank-label">我的最好战绩</div>
+          <div class="my-rank-score" id="my-rank-score">0 分</div>
+          <div class="my-rank-pos" id="my-rank-pos">全国排名: 暂无上榜</div>
+        </div>
+        <div class="rank-tabs">
+          <button class="rank-tab active" data-period="day" type="button">今日榜</button>
+          <button class="rank-tab" data-period="week" type="button">本周榜</button>
+          <button class="rank-tab" data-period="all" type="button">总榜</button>
+        </div>
+        <div class="rank-list-wrap">
+          <div class="rank-list" id="rank-list-items"></div>
+        </div>
+        <div class="rank-actions">
+          <button id="btn-rank-share" class="btn-rank-share" type="button">发笔记晒战绩</button>
+          <button id="btn-rank-restart" class="btn-rank-restart" type="button">再来一局</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 达成 2048 胜利庆祝弹窗 -->
+  <div id="win-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">高光时刻！</div>
+      </div>
+      <div class="modal-body win-content">
+        <div class="win-icon">2048</div>
+        <div class="win-title">恭喜成功合出 2048！</div>
+        <div class="win-desc">您已经达成殿堂级合成成就，是否继续向更高极限发起冲击？</div>
+        <button id="btn-win-share" class="btn-rank-share btn-win-share" type="button">发笔记晒战绩</button>
+        <div class="rank-actions">
+          <button id="btn-win-keep" class="btn-rank-share" type="button">继续挑战更高分</button>
+          <button id="btn-win-rank" class="btn-rank-restart" type="button">查看全国排名</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 秘籍与指引弹窗 -->
+  <div id="guide-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">2048 · 高分通关秘籍</div>
+        <button id="guide-close" class="modal-close-btn" type="button">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="my-rank-banner" style="background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1);">
+          <div class="my-rank-label">Alex 游戏百宝箱 · 益智工坊</div>
+          <div style="font-size: 14px; color: #fff; margin-top: 4px;">极简高颜值益智体验 · 冲刺全国第一</div>
+        </div>
+        <div style="font-size: 13px; line-height: 1.6; color: #cdd6f4;">
+          <p style="margin-bottom: 8px;"><strong>1. 经典角落定锚法：</strong>选择右下角或左下角作为你的“大本营”，把最大的数字始终锁在角落，绝不轻易向上或向相反方向滑动！</p>
+          <p style="margin-bottom: 8px;"><strong>2. 蛇形递减排布：</strong>让第二大、第三大的数字紧贴大本营，形成流水线式连环合并。</p>
+          <p style="margin-bottom: 8px;"><strong>3. 专属撤回神器：</strong>关键时刻走错一步？点击「撤回 ↶」即可悔棋重来，助力冲刺上万高分！</p>
+          <p><strong>4. 全国实时冲榜：</strong>每完成一局自动上传官方排行榜，生成专属战报海报发笔记分享！</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 脚本必须外置。容器 CSP 不执行内联 script，否则真机不开局、按键无监听。 -->
+  <script src="./assets/xhs-bridge.js"></script>
+  <script src="./assets/audio.js"></script>
+  <script src="./assets/game.js"></script>
+  <script src="./assets/ui.js"></script>
+  <script src="./assets/boot.js"></script>
+  <script src="./assets/leaderboard.js"></script>
+</body>
+</html>

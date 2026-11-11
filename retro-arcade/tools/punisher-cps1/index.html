@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>惩罚者</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script>
+    window.addEventListener('error', function(e) {
+      console.error('[UNCAUGHT ERROR]', e);
+      var msg = (e && e.message) ? e.message : String(e);
+      var box = document.getElementById('debug-err');
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'debug-err';
+        box.style.cssText = 'position:fixed;top:10px;left:10px;right:10px;background:rgba(200,0,0,0.9);color:#fff;padding:12px;border-radius:8px;font-size:12px;z-index:99999;word-break:break-all;';
+        document.body.appendChild(box);
+      }
+      box.textContent = '运行异常: ' + msg;
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      console.error('[UNHANDLED REJECTION]', e);
+    });
+  </script>
+</head>
+<body>
+  <div id="toast" class="toast"></div>
+  <div id="deck-controls">
+    <div id="toolbar-sub">
+      <button id="btn-reset" type="button">复位</button>
+      <button id="btn-sound" type="button">声音</button>
+    </div>
+    <div id="toolbar">
+      <button id="btn-save" type="button">存档</button>
+      <button id="btn-fast" type="button">3× 加速</button>
+      <button id="btn-settings" type="button">设置</button>
+      <button id="btn-record" type="button">59s 录屏</button>
+    </div>
+  </div>
+  <canvas id="main-canvas"></canvas>
+  <script src="assets/config.js"></script>
+  <script src="assets/xhs-bridge.js"></script>
+  <script src="assets/lzstring.js"></script>
+  <script src="assets/fbneo_cps1.js"></script>
+  <script src="assets/rom.js"></script>
+  <script src="assets/core.js"></script>
+  <script src="assets/skin.js"></script>
+  <script src="assets/shell.js"></script>
+</body>
+</html>

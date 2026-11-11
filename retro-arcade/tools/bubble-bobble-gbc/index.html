@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>经典泡泡龙 (Classic Bubble Bobble)</title>
+  <link rel="stylesheet" href="./assets/style.css" />
+  <script>
+    // 真机全局异常捕获监控，防止任何静默黑屏
+    window.addEventListener('error', function(e) {
+      console.error('[UNCAUGHT ERROR]', e);
+      var msg = (e && e.message) ? e.message : String(e);
+      var el = document.getElementById('toast');
+      if (el) {
+        el.textContent = '运行提示: ' + msg.slice(0, 60);
+        el.classList.add('show');
+      }
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      console.error('[UNHANDLED REJECTION]', e);
+      var msg = (e && e.reason) ? (e.reason.message || String(e.reason)) : '未知错误';
+      var el = document.getElementById('toast');
+      if (el) {
+        el.textContent = '异步提示: ' + msg.slice(0, 60);
+        el.classList.add('show');
+      }
+    });
+  </script>
+</head>
+<body>
+  <div id="toast" class="toast"></div>
+
+  <!-- 底部服务检修控制面板 (标准双层控制面板) -->
+  <div id="deck-controls">
+    <!-- 第二层：游戏控制辅助层 (左侧复位，右侧声音，工整对称) -->
+    <div id="toolbar-sub">
+      <button id="btn-reset" type="button">复位</button>
+      <button id="btn-sound" type="button">声音</button>
+    </div>
+    <!-- 第一层：系统工具底栏 (标准4键) -->
+    <div id="toolbar">
+      <button id="btn-save" type="button">存档</button>
+      <button id="btn-fast" type="button">3× 加速</button>
+      <button id="btn-settings" type="button">设置</button>
+      <button id="btn-record" type="button">59s 录屏</button>
+    </div>
+  </div>
+
+  <!-- 掌机主渲染画布 -->
+  <canvas id="main-canvas"></canvas>
+
+  <!-- 引入依赖脚本 (严格按序外置加载，严禁 type=module) -->
+  <script src="./assets/config.js"></script>
+  <script src="./assets/xhs-bridge.js"></script>
+  <script src="./assets/gb.min.js"></script>
+  <script src="./assets/lzstring.js"></script>
+  <script src="./assets/rom.js"></script>
+  <script src="./assets/core.js"></script>
+  <script src="./assets/skin.js"></script>
+  <script src="./assets/shell.js"></script>
+</body>
+</html>

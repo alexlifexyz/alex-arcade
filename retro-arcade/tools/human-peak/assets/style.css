@@ -1,0 +1,770 @@
+/* 《人类极限挑战》Three.js 3D 能量波浪主题样式表 (首页直接大字版 · 零遮挡弹窗) */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+
+  --bg-deep: #050811;
+  --primary-cyan: #00f5d4;
+  --primary-emerald: #10b981;
+  --primary-rose: #f43f5e;
+  --primary-purple: #8b5cf6;
+  --primary-amber: #f59e0b;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  min-height: -webkit-fill-available;
+  overflow: hidden;
+  background: var(--bg-deep);
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", sans-serif;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* 底层 3D 能量波浪画布 (全屏铺满 · 零阻挡事件穿透) */
+.bg-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  max-width: 480px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 10;
+  padding-bottom: max(var(--sab), 10px);
+  overflow: hidden;
+}
+
+/* 顶部状态栏：全面避让小红书左上角返回按键(60px)与右上角原生胶囊(90px) */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: max(var(--sat), 54px);
+  padding-bottom: 12px;
+  padding-left: max(var(--sal), 60px);
+  padding-right: max(var(--sar), 90px);
+  background: rgba(5, 8, 17, 0.45);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 30;
+  flex-shrink: 0;
+}
+
+.brand-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.brand-title {
+  display: flex;
+  align-items: center;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.brand-tag {
+  font-size: 10px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #00f5d4, #0070f3);
+  color: #050811;
+  padding: 1px 6px;
+  border-radius: 6px;
+  margin-left: 6px;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.brand-subtitle {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.icon-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f1f5f9;
+  border-radius: 12px;
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  touch-action: manipulation;
+  margin-left: 6px;
+}
+
+.icon-btn.btn-share-accent {
+  background: linear-gradient(135deg, #00f5d4 0%, #0070f3 100%);
+  color: #050811;
+  border: none;
+  font-weight: 900;
+  box-shadow: 0 2px 10px rgba(0, 245, 212, 0.4);
+}
+
+.icon-btn:active {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(0.95);
+}
+
+/* 项目切换 Tabs */
+.modes-bar {
+  display: flex;
+  padding: 10px 16px 6px;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.mode-tab {
+  flex: 1;
+  text-align: center;
+  padding: 10px 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(10, 15, 29, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  margin-right: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  touch-action: manipulation;
+}
+
+.mode-tab:last-child {
+  margin-right: 0;
+}
+
+.mode-tab.active {
+  background: rgba(0, 245, 212, 0.16);
+  border-color: rgba(0, 245, 212, 0.6);
+  color: #00f5d4;
+  box-shadow: 0 0 20px rgba(0, 245, 212, 0.25);
+}
+
+/* 主游戏挑战舞台区 (全屏高响应透光触控) */
+.stage-area {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 挑战触控大面板 */
+.touch-stage {
+  flex: 1 1 0;
+  width: 100%;
+  border-radius: 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px 20px;
+  position: relative;
+  cursor: pointer;
+  touch-action: none;
+  transition: all 0.2s ease;
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  background: rgba(10, 15, 29, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+/* 主框左上角发笔记打榜按钮 (测完弹出动效) */
+.stage-corner-share-btn {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 30;
+  background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+  color: #050811;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(255, 255, 255, 0.25);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  animation: corner-pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* 主框右上角打叉圆形关闭按钮 (擦掉才能继续下一轮) */
+.stage-corner-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  z-index: 30;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  animation: corner-pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.stage-corner-close-btn:active {
+  transform: scale(0.9);
+  background: rgba(255, 255, 255, 0.25);
+}
+
+@keyframes corner-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.stage-corner-share-btn:active {
+  transform: scale(0.94);
+  opacity: 0.9;
+}
+
+/* SVG 现代科技矢量图标容器 (无任何 emoji) */
+.stage-vector-icon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  color: #00f5d4;
+  transition: all 0.2s ease;
+}
+
+.tech-icon {
+  width: 100%;
+  height: 100%;
+}
+
+/* 反应测试专用背景状态 */
+.touch-stage.state-idle {
+  background: rgba(10, 15, 29, 0.55);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.touch-stage.state-waiting {
+  background: radial-gradient(circle, rgba(225, 29, 72, 0.35) 0%, rgba(10, 15, 29, 0.85) 100%);
+  border-color: #f43f5e;
+  box-shadow: 0 0 45px rgba(244, 63, 94, 0.35);
+}
+
+.touch-stage.state-waiting .stage-vector-icon {
+  color: #f43f5e;
+  animation: pulse-ring 1.2s infinite ease-in-out;
+}
+
+@keyframes pulse-ring {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.18); opacity: 1; }
+}
+
+.touch-stage.state-ready {
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.45) 0%, rgba(10, 15, 29, 0.88) 100%);
+  border-color: #10b981;
+  border-width: 2.5px;
+  box-shadow: 0 0 60px rgba(16, 185, 129, 0.6);
+  animation: pop-scale 0.15s ease-out;
+}
+
+.touch-stage.state-ready .stage-vector-icon {
+  color: #10b981;
+}
+
+@keyframes pop-scale {
+  0% { transform: scale(0.97); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.touch-stage.state-failed {
+  background: rgba(159, 18, 57, 0.4);
+  border-color: #e11d48;
+}
+
+.touch-stage.state-result {
+  background: radial-gradient(circle, rgba(30, 41, 59, 0.5) 0%, rgba(10, 15, 29, 0.9) 100%);
+  border-color: rgba(255, 255, 255, 0.25);
+  border-width: 1.5px;
+  box-shadow: 0 0 35px rgba(255, 255, 255, 0.1);
+}
+
+.touch-stage.state-result .stage-vector-icon {
+  color: #ffffff;
+}
+
+/* 舞台内大文字与数值 (大幅度放大字号) */
+.stage-main-text {
+  font-size: 32px;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+  line-height: 1.25;
+}
+
+.stage-sub-text {
+  font-size: 16px;
+  color: #cbd5e1;
+  margin-top: 10px;
+  max-width: 320px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+/* 巨幅动态数值跳动 (100px 巨幅大字 · 纯白柔光 · 彻底无绿) */
+.stage-big-stat {
+  font-size: 100px;
+  font-weight: 900;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", monospace;
+  color: #ffffff;
+  margin: 6px 0 2px;
+  text-shadow: 0 0 30px rgba(255, 255, 255, 0.4);
+  letter-spacing: -2px;
+  line-height: 1;
+}
+
+.stage-stat-unit {
+  font-size: 26px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-left: 6px;
+  letter-spacing: 0px;
+}
+
+/* 评级勋章与超越百分比胶囊 (原位大字展示 · 纯净黑白金) */
+.stage-rank-tag {
+  display: inline-block;
+  padding: 8px 24px;
+  border-radius: 24px;
+  font-size: 18px;
+  font-weight: 900;
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1.5px solid rgba(251, 191, 36, 0.7);
+  margin-top: 12px;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.25);
+}
+
+.stage-beat-pill {
+  display: inline-block;
+  padding: 8px 26px;
+  border-radius: 20px;
+  font-size: 18px;
+  font-weight: 900;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  margin-top: 10px;
+  box-shadow: none;
+}
+
+.stage-challenge-call {
+  font-size: 14px;
+  font-weight: 800;
+  color: #cbd5e1;
+  margin-top: 12px;
+  letter-spacing: 0.5px;
+}
+
+/* 记忆矩阵专属网格 (大方块 · 36px 大字号) */
+.memory-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  width: 100%;
+  max-width: 300px;
+  margin: 18px auto;
+}
+
+.memory-cell {
+  aspect-ratio: 1;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  font-weight: 900;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  touch-action: manipulation;
+}
+
+.memory-cell:active {
+  transform: scale(0.92);
+}
+
+.memory-cell.revealed {
+  background: rgba(0, 245, 212, 0.25);
+  border-color: #00f5d4;
+  color: #ffffff;
+  box-shadow: 0 0 20px rgba(0, 245, 212, 0.45);
+}
+
+.memory-cell.blank {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: transparent;
+}
+
+.memory-cell.correct {
+  background: rgba(16, 185, 129, 0.35);
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.memory-cell.wrong {
+  background: rgba(244, 63, 94, 0.45);
+  border-color: #f43f5e;
+  color: #ffffff;
+}
+
+/* 底部操作与导航栏 */
+.bottom-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px 4px;
+  flex-shrink: 0;
+}
+
+.ctrl-btn {
+  flex: 1;
+  padding: 12px 0;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 800;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(10, 15, 29, 0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #f1f5f9;
+  margin-right: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  touch-action: manipulation;
+}
+
+.ctrl-btn:last-child {
+  margin-right: 0;
+}
+
+.ctrl-btn.btn-primary {
+  flex: 1.35;
+  background: linear-gradient(135deg, #00f5d4 0%, #0070f3 100%);
+  color: #050811;
+  border: none;
+  font-weight: 900;
+  box-shadow: 0 4px 18px rgba(0, 245, 212, 0.4);
+}
+
+.ctrl-btn.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.ctrl-btn.btn-share {
+  background: #ffffff;
+  color: #050811;
+  border: none;
+  font-weight: 900;
+}
+
+.ctrl-btn:active {
+  transform: translateY(1px);
+  opacity: 0.9;
+}
+
+/* Toast 提示 */
+.toast {
+  position: fixed;
+  top: max(var(--sat), 64px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(10, 15, 29, 0.96);
+  border: 1px solid rgba(0, 245, 212, 0.5);
+  color: #ffffff;
+  padding: 11px 24px;
+  border-radius: 24px;
+  font-size: 15px;
+  font-weight: 800;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.65);
+  white-space: nowrap;
+}
+
+.toast.show {
+  opacity: 1;
+}
+
+/* 弹窗通用覆盖层 (仅用于全国排行榜) */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(5, 8, 17, 0.85);
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  touch-action: manipulation;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 410px;
+  max-height: 88vh;
+  background: #0a0f1d;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75);
+  overflow: hidden;
+  touch-action: manipulation;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 0.3px;
+}
+
+.modal-close-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: #94a3b8;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+}
+
+.modal-body {
+  padding: 16px 18px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 排行榜专用 (三榜 Tab · 大字号 · 高光前三) */
+.rank-switch-tabs {
+  display: flex;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 3px;
+  margin-bottom: 12px;
+}
+
+.rank-board-tab {
+  flex: 1;
+  text-align: center;
+  padding: 9px 0;
+  font-size: 13px;
+  font-weight: 800;
+  color: #94a3b8;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.rank-board-tab.active {
+  background: #0070f3;
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 112, 243, 0.4);
+}
+
+.rank-list-box {
+  min-height: 200px;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 6px;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.rank-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.rank-item:last-child {
+  border-bottom: none;
+}
+
+.rank-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 900;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.08);
+  margin-right: 12px;
+}
+
+.rank-num.top-1 { background: #fbbf24; color: #78350f; box-shadow: 0 0 10px rgba(251, 191, 36, 0.5); }
+.rank-num.top-2 { background: #e2e8f0; color: #050811; box-shadow: 0 0 10px rgba(226, 232, 240, 0.4); }
+.rank-num.top-3 { background: #f97316; color: #ffffff; box-shadow: 0 0 10px rgba(249, 115, 22, 0.4); }
+
+.rank-user-box {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  margin-right: 12px;
+}
+
+.rank-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+}
+
+.rank-avatar-placeholder {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+
+.rank-user-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rank-val {
+  font-size: 16px;
+  font-weight: 900;
+  color: #fbbf24;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", monospace;
+}
+
+.rank-empty {
+  text-align: center;
+  padding: 40px 10px;
+  font-size: 14px;
+  color: #94a3b8;
+}

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>最终幻想战略版A</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script>
+    // 全局异常捕获监控，防止任何静默黑屏
+    window.addEventListener('error', function(e) {
+      console.error('[UNCAUGHT ERROR]', e);
+      var msg = (e && e.message) ? e.message : String(e);
+      var box = document.getElementById('debug-err');
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'debug-err';
+        box.style.cssText = 'position:fixed;top:10px;left:10px;right:10px;background:rgba(200,0,0,0.9);color:#fff;padding:12px;border-radius:8px;font-size:12px;z-index:99999;word-break:break-all;';
+        document.body.appendChild(box);
+      }
+      box.textContent = '运行异常: ' + msg;
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      console.error('[UNHANDLED REJECTION]', e);
+    });
+  </script>
+</head>
+<body>
+  <div id="toast" class="toast"></div>
+
+  <!-- 底部服务检修控制面板 (双层控制面板) -->
+  <div id="deck-controls">
+    <!-- 第二层：游戏控制辅助层 (左侧复位，右侧声音，左右工整对称) -->
+    <div id="toolbar-sub">
+      <button id="btn-reset" type="button">复位</button>
+      <button id="btn-sound" type="button">声音</button>
+    </div>
+    <!-- 第一层：系统工具底栏 (标准4键) -->
+    <div id="toolbar">
+      <button id="btn-save" type="button">存档</button>
+      <button id="btn-fast" type="button">3× 加速</button>
+      <button id="btn-settings" type="button">设置</button>
+      <button id="btn-record" type="button">59s 录屏</button>
+    </div>
+  </div>
+
+  <!-- 掌机主渲染画布 -->
+  <canvas id="main-canvas"></canvas>
+
+  <!-- GBA 核心离屏输出画布 (240x160) -->
+  <div id="core-host" style="display:none;">
+    <canvas id="screen" width="240" height="160"></canvas>
+  </div>
+
+  <!-- 引入依赖脚本 (严格按序外置加载，严禁 type=module) -->
+  <script src="assets/config.js"></script>
+  <script src="assets/xhs-bridge.js"></script>
+  <script src="assets/lzstring.js"></script>
+  <script src="assets/gba.min.js"></script>
+  <script src="assets/rom.js"></script>
+  <script src="assets/core.js"></script>
+  <script src="assets/skin.js"></script>
+  <script src="assets/shell.js"></script>
+</body>
+</html>

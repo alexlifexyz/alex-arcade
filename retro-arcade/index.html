@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b0910">
+<title>像素街机馆 · Pixel Arcade — 104 款经典 FC / GBA / 街机在线玩</title>
+<meta name="description" content="在线重温 104 款经典 FC、GBA、CPS1 街机游戏。即点即玩，支持键盘、虚拟按键与蓝牙手柄。">
+<meta property="og:title" content="像素街机馆 · Pixel Arcade">
+<meta property="og:description" content="104 款经典游戏，浏览器里即点即玩。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕹️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0910;
+    --bg2: #131019;
+    --card: rgba(255,255,255,.035);
+    --panel: rgba(255,255,255,.05);
+    --line: rgba(255,255,255,.08);
+    --text: #f3ece0;
+    --sub: #a79f93;
+    --gold: #f0c14b;
+    --pink: #ff4d8d;
+    --cyan: #38e1ff;
+    --green: #57f5a8;
+    --cjk: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  html, body { background: var(--bg); color: var(--text); }
+  body { font-family: var(--cjk); min-height: 100vh; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; color: inherit; cursor: pointer; }
+  .wrap { width: min(1180px, calc(100vw - 40px)); margin: 0 auto; }
+  .display { font-family: "Bebas Neue", Impact, var(--cjk); letter-spacing: .06em; }
+  .pix { font-family: "Silkscreen", "Courier New", monospace; }
+
+  /* ---------- header ---------- */
+  header {
+    position: sticky; top: 0; z-index: 30;
+    background: rgba(11,9,16,.82); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line);
+  }
+  .hdr { display: flex; align-items: center; gap: 16px; height: 58px; }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo .coin {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 28%, #ffe08a, #f0c14b 55%, #8a5a10);
+    box-shadow: 0 0 0 2px #1a1008, 0 0 0 3px var(--gold), 0 0 16px rgba(240,193,75,.3);
+    display: grid; place-items: center; font-size: 15px;
+  }
+  .logo b { font-family: "Bebas Neue", Impact, sans-serif; font-weight: 400; font-size: 26px; letter-spacing: .14em; color: var(--gold); }
+  .logo span { font-size: 11px; color: var(--sub); letter-spacing: .12em; }
+  nav { display: flex; gap: 4px; margin-left: 12px; }
+  nav a { font-size: 14px; color: var(--sub); padding: 8px 12px; border-radius: 10px; }
+  nav a:hover { color: var(--text); background: rgba(255,255,255,.05); }
+  .hdr-r { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 17px; border: 1px solid var(--line); background: rgba(255,255,255,.04); font-size: 13px; font-weight: 700; }
+  .pill.star { color: var(--gold); border-color: rgba(240,193,75,.35); }
+  .pill svg { width: 16px; height: 16px; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--line); }
+  #bg3d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: -2;
+    background: radial-gradient(800px 600px at 70% 30%, rgba(56,225,255,.06), transparent 70%);
+  }
+  .hero::after {
+    content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    background:
+      radial-gradient(60% 70% at 30% 45%, rgba(56,225,255,.08), transparent 70%),
+      linear-gradient(90deg, rgba(11,9,16,.88) 0%, rgba(11,9,16,.5) 50%, rgba(11,9,16,.3) 100%),
+      linear-gradient(180deg, transparent 60%, var(--bg) 100%);
+  }
+  .hero-in { position: relative; z-index: 5; display: grid; grid-template-columns: 1.1fr .9fr; gap: 40px; align-items: center; padding: 56px 0 64px; }
+  .kicker { font-size: 13px; letter-spacing: .2em; color: var(--gold); font-weight: 700; margin-bottom: 14px; }
+  .kicker i { font-style: normal; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #3f3; box-shadow: 0 0 8px #3f3; margin-right: 8px; vertical-align: 1px; animation: blink 1.6s infinite; }
+  @keyframes blink { 50% { opacity: .3; } }
+  h1 { font-family: "Bebas Neue", Impact, sans-serif; font-weight: 400; font-size: clamp(48px, 8vw, 112px); line-height: 1.04; letter-spacing: .04em; }
+  h1 span { color: var(--pink); text-shadow: 0 0 30px rgba(255,77,141,.5); }
+  h1 .cy { color: var(--cyan); text-shadow: 0 0 30px rgba(56,225,255,.4); }
+  .lead { font-size: 17px; line-height: 1.7; color: #e6ddcf; max-width: 32em; margin: 20px 0 26px; }
+  .lead b { color: var(--gold); }
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn { display: inline-flex; align-items: center; gap: 10px; height: 50px; padding: 0 22px; border-radius: 14px; font-weight: 800; font-size: 16px; border: 1px solid var(--line); background: rgba(255,255,255,.06); transition: transform .12s, filter .12s; }
+  .btn:hover { transform: translateY(-2px); }
+  .btn.primary { background: var(--gold); color: #1a1008; border: 0; box-shadow: 0 10px 30px rgba(240,193,75,.25); }
+  .btn.cyan { background: var(--cyan); color: #04121a; border: 0; box-shadow: 0 10px 30px rgba(56,225,255,.2); }
+  .btn.primary small { font-weight: 600; opacity: .7; font-size: 12px; }
+  .btn .coin-sm { width: 22px; height: 22px; border-radius: 50%; background: radial-gradient(circle at 35% 28%, #ffe08a, #f0c14b 55%, #8a5a10); display: grid; place-items: center; font-size: 12px; }
+  .stats { display: flex; gap: 28px; margin-top: 34px; flex-wrap: wrap; }
+  .stats div b { display: block; font-family: "Bebas Neue", Impact, sans-serif; font-weight: 400; font-size: 38px; line-height: 1; color: var(--text); }
+  .stats div b.gold { color: var(--gold); }
+  .stats div b.cy { color: var(--cyan); }
+  .stats div b.pk { color: var(--pink); }
+  .stats div span { font-size: 12px; color: var(--sub); letter-spacing: .08em; }
+
+  /* hero 右侧：搜索 + 快速进入 */
+  .hero-right { display: flex; flex-direction: column; gap: 14px; }
+  .search-box { position: relative; }
+  .search-box input {
+    width: 100%; height: 48px; border-radius: 14px; border: 1px solid var(--line);
+    background: rgba(0,0,0,.35); color: var(--text); padding: 0 14px 0 42px; font-size: 15px; outline: none; font-family: inherit;
+  }
+  .search-box input:focus { border-color: var(--gold); }
+  .search-box input::placeholder { color: var(--sub); }
+  .search-box svg { position: absolute; left: 14px; top: 16px; width: 18px; height: 18px; color: var(--sub); }
+  .quick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .quick-grid a {
+    display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 8px;
+    border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.03);
+    transition: transform .15s, border-color .15s; text-align: center;
+  }
+  .quick-grid a:hover { transform: translateY(-3px); border-color: var(--c); }
+  .quick-grid a .emoji { font-size: 28px; }
+  .quick-grid a .name { font-size: 11px; color: var(--sub); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+  .quick-grid a .en { font-family: "Silkscreen", monospace; font-size: 9px; color: var(--c); }
+
+  /* ---------- sections ---------- */
+  section.block { padding: 56px 0 8px; }
+  .sh { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+  .sh h2 { font-size: 26px; font-weight: 900; }
+  .sh h2 em { font-style: normal; font-family: "Bebas Neue", Impact, sans-serif; font-weight: 400; color: var(--gold); letter-spacing: .08em; margin-right: 10px; font-size: 30px; }
+  .sh p { color: var(--sub); font-size: 14px; }
+
+  /* 精选横滑 */
+  .rail { display: grid; grid-auto-flow: column; grid-auto-columns: 220px; gap: 16px; overflow-x: auto; padding: 4px 4px 18px; scroll-snap-type: x mandatory; scrollbar-width: thin; scrollbar-color: rgba(240,193,75,.3) transparent; }
+  .feat { scroll-snap-align: start; border-radius: 20px; overflow: hidden; background: var(--bg2); border: 1px solid var(--line); transition: transform .18s, border-color .18s, box-shadow .18s; position: relative; display: block; }
+  .feat:hover, .feat:focus-visible { transform: translateY(-6px); border-color: var(--c); box-shadow: 0 20px 40px rgba(0,0,0,.5), 0 0 30px color-mix(in srgb, var(--c) 25%, transparent); outline: none; }
+  .feat .thumb { position: relative; aspect-ratio: 3/4; overflow: hidden; }
+  .feat .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .feat .thumb::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 55%, var(--bg2)); pointer-events: none; }
+  .feat .badge { position: absolute; top: 10px; left: 10px; z-index: 2; font-size: 11px; font-weight: 900; padding: 3px 8px; border-radius: 99px; background: var(--c); color: #120c06; }
+  .feat .play { position: absolute; top: 10px; right: 10px; z-index: 2; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: rgba(0,0,0,.6); opacity: 0; transition: .2s; font-size: 14px; }
+  .feat:hover .play { opacity: 1; }
+  .feat .info { padding: 2px 14px 16px; margin-top: -30px; position: relative; z-index: 2; }
+  .feat h3 { font-size: 15px; font-weight: 900; line-height: 1.3; }
+  .feat .en { font-family: "Silkscreen", monospace; font-size: 10px; color: var(--c); letter-spacing: .04em; }
+  .feat p { font-size: 11px; color: var(--sub); line-height: 1.55; margin: 6px 0 8px; min-height: 28px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .meta { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--sub); }
+
+  /* 游戏库 */
+  .tools-bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chips button { height: 34px; padding: 0 14px; border-radius: 17px; border: 1px solid var(--line); background: none; color: var(--sub); font-size: 13px; font-weight: 700; }
+  .chips button:hover { color: var(--text); }
+  .chips button.on { background: var(--gold); border-color: var(--gold); color: #120c06; }
+  .chips button span { opacity: .6; margin-left: 4px; font-weight: 500; }
+  .search { margin-left: auto; position: relative; }
+  .search input { height: 38px; width: 220px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.3); color: var(--text); padding: 0 12px 0 34px; font-size: 14px; outline: none; font-family: inherit; }
+  .search input:focus { border-color: var(--gold); }
+  .search svg { position: absolute; left: 11px; top: 11px; width: 16px; height: 16px; color: var(--sub); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 14px; }
+  .card { display: flex; flex-direction: column; border-radius: 16px; overflow: hidden; background: var(--card); border: 1px solid var(--line); transition: transform .15s, border-color .15s; }
+  .card:hover, .card:focus-visible { transform: translateY(-4px); border-color: var(--c); outline: none; }
+  .card .thumb { position: relative; aspect-ratio: 3/4; overflow: hidden; }
+  .card .thumb img, .feat .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; background: radial-gradient(circle at 50% 40%, #1a1320, #05040a); transition: transform .3s; }
+  .card:hover .thumb img { transform: scale(1.05); }
+  .card .badge { position: absolute; top: 8px; left: 8px; font-size: 10px; font-weight: 900; padding: 2px 7px; border-radius: 99px; background: var(--c); color: #120c06; }
+  .card .play-fab { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; color: #1a1008; background: var(--gold); opacity: 0; transform: scale(.6); transition: .2s; }
+  .card:hover .play-fab { opacity: 1; transform: scale(1); }
+  .card .body { padding: 10px 12px 12px; }
+  .card h4 { font-size: 15px; font-weight: 800; display: flex; gap: 6px; align-items: center; }
+  .card .pitch { font-size: 12px; color: var(--sub); margin: 4px 0 0; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; min-height: 18px; }
+  .none { color: var(--sub); padding: 40px 0; text-align: center; grid-column: 1/-1; }
+
+  /* 平台说明 */
+  .keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .key { padding: 24px; }
+  .key .cap { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; font-family: "Silkscreen", monospace; font-weight: 700; margin-bottom: 14px;
+    background: radial-gradient(circle at 35% 28%, #4a4352, #28222e 60%, #1a161f); box-shadow: 0 5px 0 #0a080d, inset 0 1px 0 rgba(255,255,255,.18); font-size: 14px; color: #cfc6d8; }
+  .key.ok .cap { background: radial-gradient(circle at 35% 28%, #ffe08a, #f0c14b 55%, #8a5a10); color: #1a1008; }
+  .key h3 { font-size: 18px; margin-bottom: 6px; }
+  .key p { color: var(--sub); font-size: 14px; line-height: 1.7; }
+  .key kbd { font-family: "Silkscreen", monospace; font-size: 11px; border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; color: var(--text); }
+
+  footer { margin-top: 64px; border-top: 1px solid var(--line); padding: 26px 0 40px; color: var(--sub); font-size: 13px; }
+  footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  footer a { color: var(--gold); }
+
+  /* 投币动画 */
+  .coin-drop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(8,5,4,.5); opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .coin-drop.show { opacity: 1; }
+  .coin-drop .coin-big { width: 110px; height: 110px; border-radius: 50%; background: radial-gradient(circle at 35% 28%, #ffe08a, #f0c14b 55%, #8a5a10); display: grid; place-items: center; font-size: 48px; box-shadow: 0 0 60px rgba(240,193,75,.4); }
+  .coin-drop.show .coin-big { animation: drop .55s cubic-bezier(.3,1.4,.6,1); }
+  @keyframes drop { from { transform: translateY(-40vh) rotateY(0); } to { transform: none; } }
+
+  .no-webgl .hero::after { background: linear-gradient(180deg, rgba(11,9,16,.2), var(--bg)); }
+  .no-webgl #bg3d { display: none; }
+
+  @media (max-width: 960px) {
+    .hero-in { grid-template-columns: 1fr; padding: 36px 0 44px; }
+    .hero-right { order: -1; }
+    .keys { grid-template-columns: 1fr; }
+    nav { display: none; }
+    .quick-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .wrap { width: calc(100vw - 28px); }
+    .lead { font-size: 15px; }
+    .stats { gap: 18px; }
+    .stats div b { font-size: 30px; }
+    .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .search { margin-left: 0; width: 100%; }
+    .search input { width: 100%; }
+    .rail { grid-auto-columns: 170px; }
+    .hdr-r .pill.mute span { display: none; }
+    .quick-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap hdr">
+    <a class="logo" href="./"><span class="coin">🕹️</span><b>PIXEL ARCADE</b><span class="pix">104 GAMES</span></a>
+    <nav>
+      <a href="#featured">精选</a>
+      <a href="#library">游戏库</a>
+      <a href="#how">怎么玩</a>
+      <a href="arcade.html">工作台</a>
+    </nav>
+    <div class="hdr-r">
+      <span class="pill star" title="游戏总数"><svg viewBox="0 0 20 20"><path fill="currentColor" d="M10 1.5l2.6 5.5 6 .8-4.4 4.1 1.1 6-5.3-2.9-5.3 2.9 1.1-6L1.4 7.8l6-.8z"/></svg><span id="gamePill">104</span></span>
+      <button class="pill mute" id="mute" type="button"></button>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <canvas id="bg3d"></canvas>
+  <div class="wrap hero-in">
+    <div>
+      <div class="kicker"><i></i>PIXEL ARCADE · 像素街机馆</div>
+      <h1>重温像素<br><span>黄金</span><span class="cy">年代</span></h1>
+      <p class="lead">无需下载，打开就能玩。收录 <b>FC / NES</b>、<b>GBA</b>、<b>CPS1 街机</b> 等 <b>104</b> 款经典，支持键盘、虚拟按键与蓝牙手柄。</p>
+      <div class="cta">
+        <a class="btn primary" id="ctaMain" href="play.html"><span class="coin-sm">🪙</span><span id="ctaText">投币开玩</span></a>
+        <button class="btn" id="ctaRandom" type="button">🎲 随机来一台</button>
+      </div>
+      <div class="stats">
+        <div><b class="gold" id="sGames">104</b><span>款游戏</span></div>
+        <div><b class="cy">6</b><span>大平台</span></div>
+        <div><b class="pk">0</b><span>安装 · 免登录</span></div>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="search-box">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="7" r="5"/><path d="M11 11l4 4"/></svg>
+        <input id="heroSearch" type="search" placeholder="搜游戏名，如「马里奥」「魂斗罗」「宝可梦」…" autocomplete="off">
+      </div>
+      <div class="quick-grid" id="quickGrid"></div>
+    </div>
+  </div>
+</section>
+
+<main class="wrap">
+  <section class="block" id="featured">
+    <div class="sh"><h2><em>FEATURED</em>精选推荐</h2><p>从 104 款里挑出的必玩经典。</p></div>
+    <div class="rail" id="rail"></div>
+  </section>
+
+  <section class="block" id="library">
+    <div class="sh"><h2><em>LIBRARY</em>全部游戏</h2><p id="libCount"></p></div>
+    <div class="tools-bar">
+      <div class="chips" id="chips"></div>
+      <label class="search"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="7" r="5"/><path d="M11 11l4 4"/></svg><input id="q" type="search" placeholder="搜索游戏  /" autocomplete="off"></label>
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section class="block" id="how">
+    <div class="sh"><h2><em>HOW TO PLAY</em>怎么玩</h2><p>键盘、鼠标、手机触屏、蓝牙手柄都能玩。</p></div>
+    <div class="keys">
+      <div class="panel key"><div class="cap">⌨️</div><h3>键盘</h3><p>方向键 <kbd>←↑↓→</kbd> 移动，<kbd>Z</kbd>/<kbd>K</kbd> 跳跃，<kbd>X</kbd>/<kbd>J</kbd> 攻击/加速，<kbd>Enter</kbd> 开始。先点一下画面获取焦点。</p></div>
+      <div class="panel key"><div class="cap">📱</div><h3>触屏</h3><p>点击底栏切「虚拟键」模式，屏幕上会出现方向键和 A/B 按钮。或切「掌机」模式用完整外壳。</p></div>
+      <div class="panel key ok"><div class="cap">🎮</div><h3>手柄</h3><p>支持蓝牙手柄（需 HTTPS 环境）。底栏有存档、3× 加速、设置、59 秒录屏，底部还有复位与声音开关。</p></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>© 2026 Pixel Arcade · 游戏版权归原所有者，本站仅作技术演示与怀旧用途</div>
+    <div>工作台 <a href="arcade.html">arcade.html</a> · 播放器 <a href="play.html">play.html</a></div>
+  </div>
+</footer>
+
+<div class="coin-drop" id="drop" aria-hidden="true"><div class="coin-big">🪙</div></div>
+
+<script src="shared/web/vendor/three.min.js"></script>
+<script src="shared/web/games.js"></script>
+<script>
+(function () {
+  "use strict";
+  var GAMES = (window.WEB_GAMES || []);
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+
+  // 平台归类
+  function family(g) {
+    var p = (g.platform || "").toUpperCase();
+    if (p.indexOf("NES") >= 0 || p.indexOf("FC") >= 0) return "FC / NES";
+    if (p.indexOf("GBA") >= 0) return "GBA";
+    if (p.indexOf("CPS") >= 0) return "CPS1";
+    if (p.indexOf("GBC") >= 0) return "GBC";
+    if (p.indexOf("NGPC") >= 0) return "NGPC";
+    if (p.indexOf("GB") >= 0) return "GB";
+    return "其他";
+  }
+  var FCOLOR = {
+    "FC / NES": "#38e1ff", "GBA": "#f0c14b", "CPS1": "#ff4d8d",
+    "GBC": "#57f5a8", "NGPC": "#b388ff", "GB": "#8be9fd", "其他": "#a79f93"
+  };
+  function coverOf(g) { return "tools/" + g.id + "/cover.png"; }
+  function playUrl(id) { return "play.html?game=" + encodeURIComponent(id); }
+
+  // 顶部统计
+  $("sGames").textContent = GAMES.length;
+  $("gamePill").textContent = GAMES.length;
+
+  // 投币动画
+  function go(id) {
+    $("drop").classList.add("show");
+    setTimeout(function () { window.location.href = playUrl(id); }, 500);
+  }
+  window.addEventListener("pageshow", function () { $("drop").classList.remove("show"); });
+
+  // 静音按钮（装饰）
+  var muted = false;
+  function paintMute() {
+    $("mute").innerHTML = (muted
+      ? '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 6h3l4-3v10L5 10H2z"/><path d="M11 6l4 4M15 6l-4 4" stroke="currentColor" stroke-width="1.6"/></svg><span>静音</span>'
+      : '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 6h3l4-3v10L5 10H2z"/><path d="M11 5.5a3.5 3.5 0 010 5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg><span>音效</span>');
+  }
+  $("mute").onclick = function () { muted = !muted; paintMute(); };
+  paintMute();
+
+  // CTA
+  $("ctaMain").onclick = function (e) { e.preventDefault(); go(GAMES[0].id); };
+  $("ctaRandom").onclick = function () { go(GAMES[Math.floor(Math.random() * GAMES.length)].id); };
+
+  // 快速入口（hero 右侧）
+  var quickIds = ["mario-nes", "contra-nes", "pokemon-firered-gba", "tetris-nes", "pacman-nes", "sf2ce-cps1"];
+  var quickGames = quickIds.map(function (id) { return GAMES.find(function (g) { return g.id === id; }); }).filter(Boolean);
+  var quickEmojis = { "mario-nes": "🍄", "contra-nes": "🔫", "pokemon-firered-gba": "🐲", "tetris-nes": "🧩", "pacman-nes": "🟡", "sf2ce-cps1": "🥊" };
+  if (quickGames.length < 6) {
+    var extra = GAMES.filter(function (g) { return quickIds.indexOf(g.id) < 0; });
+    while (quickGames.length < 6 && extra.length) quickGames.push(extra.shift());
+  }
+  $("quickGrid").innerHTML = quickGames.map(function (g) {
+    var fam = family(g);
+    return '<a href="' + playUrl(g.id) + '" data-go="' + g.id + '" style="--c:' + (FCOLOR[fam] || "#a79f93") + '">' +
+      '<span class="emoji">' + (quickEmojis[g.id] || "🎮") + '</span>' +
+      '<span class="name">' + esc(g.title) + '</span>' +
+      '<span class="en">' + fam + '</span></a>';
+  }).join("");
+
+  // 精选横滑
+  var featuredIds = ["mario-nes", "contra-nes", "tetris-nes", "pacman-nes", "sf2ce-cps1", "donkeykong-nes", "adventure-nes", "zelda-minish-gba", "metroid-nes", "castlevania-nes", "dino-cps1", "advance-wars-gba"];
+  var FEAT = featuredIds.map(function (id) { return GAMES.find(function (g) { return g.id === id; }); }).filter(Boolean);
+  if (FEAT.length < 12) {
+    var fextra = GAMES.filter(function (g) { return featuredIds.indexOf(g.id) < 0; });
+    while (FEAT.length < 12 && fextra.length) FEAT.push(fextra.shift());
+  }
+  $("rail").innerHTML = FEAT.map(function (g) {
+    var fam = family(g);
+    return '<a class="feat" href="' + playUrl(g.id) + '" data-go="' + g.id + '" style="--c:' + (FCOLOR[fam] || "#a79f93") + '">' +
+      '<div class="thumb"><span class="badge">' + fam + '</span><span class="play">▶</span>' +
+      '<img loading="lazy" src="' + coverOf(g) + '" alt="' + esc(g.title) + '"></div>' +
+      '<div class="info"><h3>' + esc(g.title) + '</h3>' +
+      '<div class="en">' + fam + '</div>' +
+        '<p>' + esc(g.pitch || '浏览器里即点即玩') + '</p>' +
+        '<div class="meta"><span>' + fam + '</span><span style="color:' + (FCOLOR[fam] || "") + '">▶</span></div></div></a>';
+  }).join("");
+
+  // 游戏库
+  var cat = "全部", kw = "";
+  var counts = {};
+  GAMES.forEach(function (g) { var f = family(g); counts[f] = (counts[f] || 0) + 1; });
+  var order = ["全部", "FC / NES", "GBA", "CPS1", "GBC", "NGPC", "GB"];
+  $("chips").innerHTML = order.map(function (f) {
+    var n = f === "全部" ? GAMES.length : (counts[f] || 0);
+    if (f !== "全部" && !n) return "";
+    return '<button type="button" data-c="' + f + '" class="' + (f === cat ? "on" : "") + '">' + f + '<span>' + n + '</span></button>';
+  }).join("");
+  $("chips").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    cat = b.dataset.c; paintLib();
+  });
+
+  function paintLib() {
+    var k = kw.trim().toLowerCase();
+    var shown = GAMES.filter(function (g) {
+      if (cat !== "全部" && family(g) !== cat) return false;
+      if (k && (g.title || "").toLowerCase().indexOf(k) < 0 && (g.id || "").toLowerCase().indexOf(k) < 0 && (g.desc || "").toLowerCase().indexOf(k) < 0) return false;
+      return true;
+    });
+    $("libCount").textContent = shown.length + " 款";
+    $("grid").innerHTML = shown.length ? shown.map(function (g) {
+      var fam = family(g);
+      return '<a class="card" href="' + playUrl(g.id) + '" data-go="' + g.id + '" style="--c:' + (FCOLOR[fam] || "#a79f93") + '">' +
+        '<div class="thumb"><span class="badge">' + fam + '</span><span class="play-fab">▶</span>' +
+        '<img loading="lazy" src="' + coverOf(g) + '" alt="' + esc(g.title) + '"></div>' +
+        '<div class="body"><h4>' + esc(g.title) + '</h4><div class="pitch">' + esc(g.desc || "") + '</div></div></a>';
+    }).join("") : '<div class="none">没有找到，换个词试试。</div>';
+  }
+  paintLib();
+
+  // 搜索
+  var q = $("q");
+  q.addEventListener("input", function () { kw = this.value; paintLib(); });
+  window.addEventListener("keydown", function (e) {
+    if (e.key === "/" && document.activeElement !== q) { e.preventDefault(); q.focus(); $("library").scrollIntoView(); }
+  });
+
+  var heroSearch = $("heroSearch");
+  heroSearch.addEventListener("input", function () { kw = this.value; paintLib(); });
+  heroSearch.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      var k = this.value.trim().toLowerCase();
+      var list = GAMES.filter(function (g) { return (g.title || "").toLowerCase().indexOf(k) >= 0 || (g.id || "").toLowerCase().indexOf(k) >= 0; });
+      if (list.length) go(list[0].id);
+    }
+  });
+
+  // 拦截带 data-go 的链接 → 投币动画
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest("[data-go]");
+    if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    e.preventDefault(); go(a.dataset.go);
+  });
+
+  /* ============ three.js HERO 封面环 ============ */
+  var canvas = $("bg3d");
+  function initHero() {
+    if (typeof THREE === "undefined") { document.body.classList.add("no-webgl"); return; }
+    var renderer;
+    try { renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true }); }
+    catch (e) { document.body.classList.add("no-webgl"); return; }
+    if (!renderer.getContext()) { document.body.classList.add("no-webgl"); return; }
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    var w = canvas.clientWidth, h = canvas.clientHeight;
+    renderer.setSize(w, h, false);
+
+    var scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x0b0910, 0.04);
+    var camera = new THREE.PerspectiveCamera(46, w / h, 0.1, 100);
+    camera.position.set(0, 0.3, 11);
+
+    // 粒子
+    var pCount = 600, pos = new Float32Array(pCount * 3);
+    for (var i = 0; i < pCount; i++) {
+      var r = 14 + Math.random() * 26, th = Math.random() * Math.PI * 2, ph = Math.acos(2 * Math.random() - 1);
+      pos[i*3] = r * Math.sin(ph) * Math.cos(th);
+      pos[i*3+1] = r * Math.cos(ph) * 0.6;
+      pos[i*3+2] = r * Math.sin(ph) * Math.sin(th) - 6;
+    }
+    var pGeo = new THREE.BufferGeometry();
+    pGeo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    var pMat = new THREE.PointsMaterial({ color: 0xf0c14b, size: 0.08, transparent: true, opacity: 0.4, depthWrite: false, blending: THREE.AdditiveBlending });
+    scene.add(new THREE.Points(pGeo, pMat));
+
+    // 封面环
+    var ring = new THREE.Group();
+    scene.add(ring);
+    var featured = GAMES.filter(function (_, i) { return i % 5 === 0; }).slice(0, 18);
+    var R = 6.4, loader = new THREE.TextureLoader(), meshes = [];
+    featured.forEach(function (g, i) {
+      var a = (i / featured.length) * Math.PI * 2;
+      var mat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.85 });
+      var mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
+      mesh.position.set(Math.sin(a) * R, 0, Math.cos(a) * R);
+      mesh.rotation.y = a;
+      mesh.userData = { game: g, base: new THREE.Vector2(2.5, 3.4), hover: 0 };
+      mesh.scale.set(2.5, 3.4, 1);
+      ring.add(mesh); meshes.push(mesh);
+      loader.load(coverOf(g), function (tex) {
+        tex.encoding = THREE.sRGBEncoding;
+        tex.minFilter = THREE.LinearFilter;
+        mat.map = tex; mat.needsUpdate = true;
+        var img = tex.image;
+        if (img && img.width && img.height) {
+          var ar = img.width / img.height;
+          var bw = 2.5, bh = 2.5 / ar;
+          if (bh > 3.4) { bh = 3.4; bw = 3.4 * ar; }
+          mesh.userData.base.set(bw, bh);
+          mesh.scale.set(bw, bh, 1);
+        }
+      });
+    });
+
+    var ray = new THREE.Raycaster(), mouse = new THREE.Vector2(-2, -2), hovered = null;
+    function onMove(e) {
+      var rect = canvas.getBoundingClientRect();
+      var cx = (e.touches ? e.touches[0].clientX : e.clientX);
+      var cy = (e.touches ? e.touches[0].clientY : e.clientY);
+      mouse.x = ((cx - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((cy - rect.top) / rect.height) * 2 + 1;
+    }
+    canvas.addEventListener("mousemove", onMove);
+    canvas.addEventListener("touchmove", onMove, { passive: true });
+    canvas.addEventListener("click", function () {
+      if (hovered) { go(hovered.userData.game.id); }
+      else { var g = featured[Math.floor(Math.random() * featured.length)]; go(g.id); }
+    });
+
+    var clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      var t = clock.getElapsedTime();
+      ring.rotation.y += 0.0016;
+      ring.position.y = Math.sin(t * 0.3) * 0.15;
+      ray.setFromCamera(mouse, camera);
+      var hits = ray.intersectObjects(meshes);
+      hovered = hits.length ? hits[0].object : null;
+      meshes.forEach(function (m) {
+        var target = (m === hovered) ? 1 : 0;
+        m.userData.hover += (target - m.userData.hover) * 0.15;
+        var s = 1 + m.userData.hover * 0.16;
+        m.scale.set(m.userData.base.x * s, m.userData.base.y * s, 1);
+        m.material.opacity = 0.7 + m.userData.hover * 0.3;
+      });
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener("resize", function () {
+      var nw = canvas.clientWidth, nh = canvas.clientHeight;
+      camera.aspect = nw / nh; camera.updateProjectionMatrix();
+      renderer.setSize(nw, nh, false);
+    });
+  }
+  try { initHero(); } catch (e) { document.body.classList.add("no-webgl"); }
+})();
+</script>
+</body>
+</html>

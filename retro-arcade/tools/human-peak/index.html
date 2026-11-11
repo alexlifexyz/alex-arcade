@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>人类极限挑战</title>
+  <link rel="stylesheet" href="./assets/style.css" />
+</head>
+<body>
+  <!-- 3D 能量波浪底层画布 -->
+  <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+  <div id="toast" class="toast"></div>
+
+  <div id="app">
+    <!-- 顶部状态栏 (左右双端避让返回键与胶囊，常驻发笔记与声音) -->
+    <header class="header">
+      <div class="brand-meta">
+        <div class="brand-title">
+          <span>人类极限挑战</span>
+          <span class="brand-tag">PEAK 3D</span>
+        </div>
+        <div class="brand-subtitle">全国手速与反应力巅峰赛</div>
+      </div>
+      <div class="header-right">
+        <button class="icon-btn" id="btn-header-sound" type="button">声音</button>
+      </div>
+    </header>
+
+    <!-- 项目切换 Tabs -->
+    <nav class="modes-bar">
+      <button class="mode-tab active" data-mode="reaction" type="button">反应速度</button>
+      <button class="mode-tab" data-mode="cps" type="button">10秒手速</button>
+      <button class="mode-tab" data-mode="memory" type="button">瞬间记忆</button>
+    </nav>
+
+    <!-- 舞台区 (首页酷炫大字版 · 1:1 发笔记同款视觉) -->
+    <main class="stage-area">
+      <div class="touch-stage state-idle" id="touch-stage">
+        <!-- 测完专属弹出：框左上角发笔记打榜按钮，边框右上角打叉圆形按钮 -->
+        <button class="stage-corner-share-btn" id="btn-stage-share" type="button" style="display: none;">发笔记打榜</button>
+        <button class="stage-corner-close-btn" id="btn-stage-close" type="button" style="display: none;" title="擦掉并准备下一轮">×</button>
+
+        <!-- SVG 矢量现代科技微标 -->
+        <div class="stage-vector-icon" id="stage-vector-icon">
+          <svg class="tech-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="24" cy="24" r="21" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4" />
+            <circle cx="24" cy="24" r="13" stroke="currentColor" stroke-width="2" />
+            <circle cx="24" cy="24" r="4.5" fill="currentColor" />
+            <line x1="24" y1="1" x2="24" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <line x1="24" y1="41" x2="24" y2="47" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <line x1="1" y1="24" x2="7" y2="24" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <line x1="41" y1="24" x2="47" y2="24" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </div>
+
+        <div class="stage-main-text" id="stage-main-text">轻触开始测试</div>
+        <div class="stage-sub-text" id="stage-sub-text">变绿瞬间以极限速度轻触屏幕</div>
+        
+        <!-- 巨幅醒目成绩数字 (100px 超大字) -->
+        <div class="stage-big-stat" id="stage-big-stat" style="display: none;">
+          <span id="stat-val">0</span><span class="stage-stat-unit" id="stat-unit">ms</span>
+        </div>
+
+        <!-- 评级勋章与超越百分比胶囊 (原位大字展示) -->
+        <div class="stage-rank-tag" id="stage-rank-tag" style="display: none;">超神神经反射</div>
+        <div class="stage-beat-pill" id="stage-beat-pill" style="display: none;">超越全国 99.4% 网友</div>
+        <div class="stage-challenge-call" id="stage-challenge-call" style="display: none;">谁能超越我？来小红书挑战我的战绩！</div>
+
+        <!-- 记忆矩阵专属九宫格 -->
+        <div class="memory-grid" id="memory-grid" style="display: none;">
+          <!-- 动态填充 3x3 -->
+        </div>
+      </div>
+    </main>
+
+    <!-- 底部控制栏 -->
+    <footer class="bottom-controls" id="bottom-controls">
+      <button class="ctrl-btn btn-primary" id="btn-stage-action" type="button">立即挑战</button>
+      <button class="ctrl-btn btn-share" id="btn-share" type="button">发笔记</button>
+      <button class="ctrl-btn" id="btn-screenshot" type="button">截屏</button>
+      <button class="ctrl-btn" id="btn-header-leaderboard" type="button">排位榜</button>
+    </footer>
+  </div>
+
+  <!-- 全国排位榜弹窗 (全三榜支持) -->
+  <div id="leaderboard-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">全国极限巅峰排位榜</div>
+        <button class="modal-close-btn" id="leaderboard-close" type="button">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="rank-switch-tabs">
+          <button class="rank-board-tab active" data-board="cps" type="button">10秒手速榜</button>
+          <button class="rank-board-tab" data-board="reaction" type="button">神经反应榜</button>
+          <button class="rank-board-tab" data-board="memory" type="button">瞬时记忆榜</button>
+        </div>
+        <div class="rank-list-box" id="rank-list-items">
+          <!-- 动态加载 -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 离线 3D 渲染与逻辑模块 -->
+  <script src="./assets/three.min.js"></script>
+  <script src="./assets/bg-scene.js"></script>
+  <script src="./assets/xhs-bridge.js"></script>
+  <script src="./assets/audio.js"></script>
+  <script src="./assets/game.js"></script>
+  <script src="./assets/leaderboard.js"></script>
+  <script src="./assets/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>经典俄罗斯方块 1989</title>
+  <link rel="stylesheet" href="./assets/style.css" />
+</head>
+<body>
+  <div id="toast" class="toast"></div>
+
+  <!-- 底部服务检修控制面板 (双层标准规范) -->
+  <div id="deck-controls">
+    <div id="toolbar">
+      <button id="btn-save" type="button">存档</button>
+      <button id="btn-fast" type="button">3× 加速</button>
+      <button id="btn-settings" type="button">设置</button>
+      <button id="btn-record" type="button">录制</button>
+    </div>
+    <div id="toolbar-sub">
+      <button id="btn-reset" type="button">复位</button>
+      <button id="btn-leaderboard" type="button" class="btn-highlight">全国榜</button>
+      <button id="btn-sound" type="button">声音</button>
+    </div>
+  </div>
+
+  <!-- 全国实时排行榜弹窗 -->
+  <div id="leaderboard-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card leaderboard-card">
+      <div class="modal-header">
+        <div class="modal-title">全国方块排行榜</div>
+        <button id="leaderboard-close" class="modal-close-btn" type="button">×</button>
+      </div>
+      <div class="modal-body leaderboard-body">
+        <!-- 我的排名卡片 -->
+        <div class="my-rank-banner">
+          <div class="my-rank-label">我的最好成绩</div>
+          <div class="my-rank-score" id="my-rank-score">0 分</div>
+          <div class="my-rank-pos" id="my-rank-pos">全国排名: 暂无上榜</div>
+        </div>
+        <!-- 榜单周期切换 -->
+        <div class="rank-tabs">
+          <button class="rank-tab active" data-period="day">今日榜</button>
+          <button class="rank-tab" data-period="week">本周榜</button>
+          <button class="rank-tab" data-period="all">总榜</button>
+        </div>
+        <!-- 排名列表 -->
+        <div class="rank-list-wrap">
+          <div class="rank-list" id="rank-list-items">
+            <!-- 动态填充 -->
+          </div>
+        </div>
+        <!-- 底部操作按钮 -->
+        <div class="rank-actions">
+          <button id="btn-rank-share" class="btn-rank-share" type="button">发笔记晒战绩</button>
+          <button id="btn-rank-restart" class="btn-rank-restart" type="button">再来一局</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 俄罗斯方块秘籍指南弹窗 -->
+  <div id="cheat-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">俄罗斯方块 · 消除秘籍与指引</div>
+        <button id="modal-close" class="modal-close-btn" type="button">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="guide-section author-card">
+          <div class="author-info">
+            <div class="author-name">Alex 游戏百宝箱</div>
+            <div class="author-desc">红白机与掌机工坊 · 持续带来高品质童年怀旧小工具</div>
+          </div>
+          <button id="btn-follow-author" class="btn-follow" type="button">关注作者 获取高分攻略</button>
+        </div>
+
+        <div class="guide-section">
+          <div class="section-title">专属操控与瞬降宏</div>
+          <div class="guide-item">
+            <span class="guide-tag red">瞬降宏 (X)</span>
+            <span class="guide-desc">专属瞬降按键，单指一点即可极速直坠落地，大幅提升堆叠节奏！</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag blue">双向旋转</span>
+            <span class="guide-desc">A 键顺时针旋转、B 键逆时针旋转，双向自如避免多按一圈手忙脚乱。</span>
+          </div>
+        </div>
+
+        <div class="guide-section">
+          <div class="section-title">童年核心高分秘籍</div>
+          <div class="guide-item">
+            <span class="guide-tag gold">Level 10+ 秘籍</span>
+            <span class="guide-desc">在选关界面按住 A 键不放按 START，直接解锁 Level 10 至 Level 19 极限手速！</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag purple">Tetris 消四行</span>
+            <span class="guide-desc">预留最右侧一列空位，等待长条（I方块）一次性消除4行，奖励最高分数！</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag green">神曲 BGM</span>
+            <span class="guide-desc">A-TYPE 音乐就是世界闻名的《喀秋莎》(Korobeiniki)，放学最魔性的洗脑旋律。</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="main-canvas"></canvas>
+
+  <script src="./assets/lzstring.js"></script>
+  <script src="./assets/nes.min.js"></script>
+  <script src="./assets/xhs-bridge.js"></script>
+  <script src="./assets/config.js"></script>
+  <script src="./assets/rom.js"></script>
+  <script src="./assets/core.js"></script>
+  <script src="./assets/skin.js"></script>
+  <script src="./assets/shell.js"></script>
+  <script src="./assets/leaderboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+// 官方正统 32 位掌机巅峰神作《宝可梦：绿宝石》小红书平台配置规范
+// 严格遵守 AGENTS.md：59秒录屏上限、32MB字节闸门、标题 <=20字无emoji、必带 #小红书小工具
+(function() {
+  'use strict';
+
+  var GAME_CONFIG = {
+    gameId: 'pokemon-emerald-gba',
+    title: '宝可梦：绿宝石',
+    gameName: '宝可梦：绿宝石',
+    version: '1.0.0',
+    shareTitle: '宝可梦绿宝石！烈空坐裂空座神兽抓捕',
+    shareContent: '官方正统32位掌机巅峰神作《宝可梦 绿宝石》！烈空坐、盖欧卡、固拉多三大超古代神兽齐聚，丰缘地区道馆挑战与对战开拓区！点击即玩童年回忆。\n\n#小红书小工具 #宝可梦 #口袋妖怪 #宝可梦绿宝石 #精灵宝可梦 #GBA #童年回忆 #掌机情怀 #单机游戏 #Alex游戏百宝箱',
+    slogan: 'Alex 游戏百宝箱',
+    skin: 'black',
+    recordFsMaxMs: 59000,
+    recordFsMaxBytes: 33554432
+  };
+
+  if (typeof window !== 'undefined') {
+    window.GGEMU_CONFIG = GAME_CONFIG;
+    window.GAME_CONFIG = GAME_CONFIG;
+  }
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = GAME_CONFIG;
+  }
+})();

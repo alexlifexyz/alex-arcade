@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>沉浸式桌面收纳家</title>
+  <link rel="stylesheet" href="./assets/style.css" />
+</head>
+<body>
+  <div id="toast" class="toast"></div>
+
+  <div id="app">
+    <!-- 顶部状态栏 (带安全区与胶囊避让) -->
+    <header class="header">
+      <div class="level-meta">
+        <div class="level-title-wrap">
+          <span class="level-badge" id="level-badge">第 1 关</span>
+          <span class="level-name" id="level-name">少女粉梳妆台</span>
+        </div>
+        <div class="level-desc" id="level-desc">治愈晨间梳妆 · 严丝合缝填满</div>
+      </div>
+      <div class="header-actions">
+        <div class="timer-box" id="timer-display">00:00</div>
+        <button class="icon-btn" id="btn-header-sound" type="button" aria-label="声音开关">声音</button>
+      </div>
+    </header>
+
+    <!-- 操作提示条 -->
+    <div class="hint-bar" id="hint-bar">
+      <span class="hint-dot"></span>
+      <span class="hint-text" id="hint-text">点击下方物品选中，轻触收纳盒网格放入</span>
+    </div>
+
+    <!-- 主收纳画布区 -->
+    <main class="canvas-area" id="canvas-area">
+      <canvas id="game-canvas"></canvas>
+    </main>
+
+    <!-- 底部托盘与控制区 -->
+    <footer class="tray-panel">
+      <div class="tray-header">
+        <span class="tray-title">待收纳物品 (轻触选中或按住拖拽)</span>
+        <span class="tray-status" id="tray-status">待收纳: 10</span>
+      </div>
+      <div class="tray-scroll" id="tray-scroll">
+        <!-- 动态生成托盘物品缩略图 -->
+      </div>
+      <div class="bottom-bar">
+        <button class="tool-btn btn-primary" id="btn-rotate" type="button">旋转物品</button>
+        <button class="tool-btn" id="btn-recall" type="button">放回托盘</button>
+        <button class="tool-btn" id="btn-reset" type="button">重置</button>
+        <button class="tool-btn" id="btn-levels" type="button">关卡</button>
+        <button class="tool-btn" id="btn-header-leaderboard" type="button">大师榜</button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- 通关拍立得结算弹窗 -->
+  <div id="win-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">完美收纳！</div>
+        <button class="modal-close-btn" id="win-modal-close" type="button">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="win-stars" id="win-stars">
+          <!-- 动态星级 -->
+        </div>
+        <div class="polaroid-wrap">
+          <img id="win-polaroid-img" class="polaroid-img" alt="收纳打卡相片" />
+          <div class="polaroid-caption" id="win-caption">完美收纳 · 少女粉梳妆台</div>
+          <div class="polaroid-stat" id="win-stat">通关用时: 38s   操作步数: 9步</div>
+        </div>
+        <div class="win-actions">
+          <button class="btn-win-share" id="btn-win-share" type="button">发笔记打卡晒图</button>
+          <button class="btn-win-next" id="btn-win-next" type="button">下一关</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 全国收纳大师排行榜弹窗 -->
+  <div id="leaderboard-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">全国收纳大师榜</div>
+        <button class="modal-close-btn" id="leaderboard-close" type="button">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="my-rank-banner">
+          <div class="my-rank-label">我的收纳成就</div>
+          <div class="my-rank-score" id="my-rank-score">0 星收纳大师</div>
+          <div class="my-rank-pos" id="my-rank-pos">全国排名: 虚位以待</div>
+        </div>
+        <div class="rank-tabs">
+          <button class="rank-tab active" data-period="day" type="button">今日榜</button>
+          <button class="rank-tab" data-period="week" type="button">本周榜</button>
+          <button class="rank-tab" data-period="all" type="button">总榜</button>
+        </div>
+        <div class="rank-list-wrap">
+          <div class="rank-list" id="rank-list-items">
+            <!-- 动态填充 -->
+          </div>
+        </div>
+        <div class="rank-actions">
+          <button class="btn-rank-share" id="btn-rank-share" type="button">发笔记晒战报</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 关卡选择抽屉 -->
+  <div id="level-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">主题场景选择 (共 5 关)</div>
+        <button class="modal-close-btn" id="level-modal-close" type="button">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="level-grid" id="level-list-items">
+          <!-- 动态渲染关卡 -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./assets/xhs-bridge.js"></script>
+  <script src="./assets/levels.js"></script>
+  <script src="./assets/audio.js"></script>
+  <script src="./assets/game.js"></script>
+  <script src="./assets/leaderboard.js"></script>
+  <script src="./assets/main.js"></script>
+</body>
+</html>

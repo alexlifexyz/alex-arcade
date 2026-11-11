@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>功夫 (Yie Ar Kung-Fu)</title>
+  <link rel="stylesheet" href="./assets/style.css?v=1.0.6" />
+</head>
+<body>
+  <div id="toast" class="toast"></div>
+
+  <!-- 底部服务检修控制面板 (5键极简浮动) -->
+  <div id="toolbar">
+    <button id="btn-cheat" type="button">秘籍/特权</button>
+    <button id="btn-save" type="button">存档</button>
+    <button id="btn-fast" type="button">3× 加速</button>
+    <button id="btn-settings" type="button">设置</button>
+    <button id="btn-record" type="button">录制</button>
+  </div>
+
+  <!-- 功夫全秘籍与通关特权弹窗 -->
+  <div id="cheat-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">功夫 · 全秘籍与通关特权</div>
+        <button id="modal-close" class="modal-close-btn" type="button">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="guide-section author-card">
+          <div class="author-info">
+            <div class="author-name">Alex 游戏百宝箱</div>
+            <div class="author-desc">红白机与掌机工坊 · 持续带来高品质童年怀旧小工具</div>
+          </div>
+          <button id="btn-follow-author" class="btn-follow" type="button">点击开启金钟罩 · 99命无敌对战</button>
+          <div class="guide-tip" style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 6px;">随时可点击上方按钮自由开启或取消特权</div>
+        </div>
+
+        <div class="guide-section">
+          <div class="section-title">专属无敌特权（可随时自由开闭）</div>
+          <div class="guide-item">
+            <span class="guide-tag red">99命守护</span>
+            <span class="guide-desc">进入关卡自动常驻 99 条生命，意外倒地立刻满血满命复活。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag gold">金钟罩铁布衫</span>
+            <span class="guide-desc">体力值永久锁定满血，免疫一切拳棒飞镖伤害，站桩硬刚。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag purple">一击必杀</span>
+            <span class="guide-desc">化身一拳宗师，出拳或腿功命中敌方瞬间清空对手体力直接 KO。</span>
+          </div>
+        </div>
+
+        <div class="guide-section">
+          <div class="section-title">童年对决出招秘籍</div>
+          <div class="guide-item">
+            <span class="guide-tag blue">上跳飞踢</span>
+            <span class="guide-desc">方向摇杆推向【上】或【斜上】+【A/B 腿功】，破防高打空对决。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag green">下蹲扫堂腿</span>
+            <span class="guide-desc">摇杆推向【下】+【A/B 腿功】，专克对手直拳与飞镖暗器。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag gold">极速十连拳</span>
+            <span class="guide-desc">按住右上【连发 X】键，一秒狂轰十拳将对手逼入擂台死角。</span>
+          </div>
+        </div>
+
+        <div class="guide-section">
+          <div class="section-title">五大宗师破阵战术</div>
+          <div class="guide-item">
+            <span class="guide-tag gold">第1关 棍术王</span>
+            <span class="guide-desc">持长棍威压，贴身扫堂腿打下盘即可快速破防取胜。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag red">第2关 烈火陶</span>
+            <span class="guide-desc">吐火球暗器，趁其蓄力下蹲避火，飞踢直踹面门。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag purple">第3关 铁链陈</span>
+            <span class="guide-desc">链枷攻击范围大，跳跃避其锁链，在其收招时连击输出。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag blue">第4关 飞镖兰</span>
+            <span class="guide-desc">飞镖手里剑暗器密集，下蹲近身贴打打断其投掷节奏。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag green">第5关 飞天武</span>
+            <span class="guide-desc">空手凌空飞扑，在其下落瞬间以旋风腿反制直接夺冠！</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="main-canvas"></canvas>
+
+  <script src="./assets/nes.min.js?v=1.0.6"></script>
+  <script src="./assets/config.js?v=1.0.6"></script>
+  <script src="./assets/rom.js?v=1.0.6"></script>
+  <script src="./assets/core.js?v=1.0.6"></script>
+  <script src="./assets/skin.js?v=1.0.6"></script>
+  <script src="./assets/shell.js?v=1.0.6"></script>
+</body>
+</html>
