@@ -5,6 +5,8 @@
 #  Alex Arcade Game Hub for FoloToy AI Passport
 
 > A vibrant collection of retro arcade classics and delightful pet runner games built for **FoloToy AI Passport**! Every game features a **dedicated landing page** and clean 3-button arcade controls.
+>
+> 🕹️ **New:** [Retro Arcade Hall](retro-arcade/) — 104 classic FC / NES, GBA and CPS1 titles running directly in the browser.
 
 ![Arcade Hall](arcade/assets/hall.jpg)
 
@@ -33,6 +35,16 @@ Every game has its own dedicated directory and page. Share any link below direct
 | [ **Tamagezi Virtual Pet**](games/tamagezi/README.md) | `tamagezi` | Virtual Pet Simulation | [ Details](games/tamagezi/README.md) |
 | [🪵 **ColorOS Wooden Fish**](games/coloros-muyu/README.md) | `coloros-muyu` | Zen Meditation / Cyber Muyu | [ Details](games/coloros-muyu/README.md) |
 | [ **White Rabbit Mascot**](games/white-rabbit/README.md) | `white-rabbit` | Desktop Mascot Pet | [ Details](games/white-rabbit/README.md) |
+
+---
+
+##  Retro Arcade Hall
+
+Visit **[`retro-arcade/`](retro-arcade/)** for a second hall dedicated to classic emulators:
+
+- **104 titles**: FC / NES, GBA, GBC, NGPC, GB and CPS1 arcade.
+- **No install**: browser-only, keyboard / virtual keys / gamepad support.
+- **Shared assets**: built from the `xhs-minitools` collection and synced as a self-contained static site under `retro-arcade/`.
 
 ---
 
