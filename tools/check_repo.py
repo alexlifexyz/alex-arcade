@@ -45,6 +45,11 @@ def text_files() -> list[Path]:
     for path in git_files():
         if not path.is_file() or path.stat().st_size > 2 * 1024 * 1024:
             continue
+        # retro-arcade/ holds encoded ROM binaries (rom.js) whose random
+        # Base85/Base64 output collides with secret-detection regexes.
+        # They are imported game data, not source files to lint.
+        if "retro-arcade" in path.relative_to(ROOT).parts:
+            continue
         try:
             path.read_text(encoding="utf-8")
         except (UnicodeDecodeError, OSError):
