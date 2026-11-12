@@ -104,14 +104,29 @@
   });
   paintMode();
 
-  // 3. 把焦点还给 iframe（内核键盘与音频手势都依赖它）
+  // 3. 把焦点还给 iframe（内核键盘与音频手势都依赖它），并全手势唤醒音频
+  function ensureAudioActive() {
+    if (!coreRef) return;
+    try {
+      if (typeof coreRef.activateAudio === 'function') coreRef.activateAudio();
+      if (typeof coreRef.resumeAudio === 'function') coreRef.resumeAudio();
+      var win = frame && frame.contentWindow;
+      if (win && win.AudioContext) {
+        if (coreRef.audioCtx && coreRef.audioCtx.state === 'suspended') {
+          coreRef.audioCtx.resume().catch(function () {});
+        }
+      }
+    } catch (_) {}
+  }
   function focusGame() {
     var B = window.WEB_INPUT_BRIDGE;
     if (B) B.focusIframe(frame);
-    if (coreRef && typeof coreRef.activateAudio === 'function') {
-      try { coreRef.activateAudio(); } catch (err) { /* 忽略 */ }
-    }
+    ensureAudioActive();
   }
+  ['pointerdown', 'click', 'keydown', 'touchstart'].forEach(function (evt) {
+    window.addEventListener(evt, ensureAudioActive, { capture: true, passive: true });
+    document.addEventListener(evt, ensureAudioActive, { capture: true, passive: true });
+  });
   stage.addEventListener('pointerdown', function () { if (mode !== 'deck') focusGame(); });
   window.addEventListener('blur', function () { if (bridge) bridge.releaseAll(); });
 
@@ -175,9 +190,13 @@
     drawFrame();
     function loop() {
       fullRafId = window.requestAnimationFrame(loop);
+      if (coreRef && typeof coreRef.tick === 'function') {
+        try { coreRef.tick(); } catch (_) {}
+      }
       drawFrame();
       if (gamepad) {
-        gamepad.poll();
+        var s = gamepad.poll();
+        if (s && s.active > 0) ensureAudioActive();
         if (++pollTicks % 30 === 0) updateGamepadStatus();
       }
     }
@@ -240,7 +259,7 @@
     if (!gamepad || !gamepadStatus) return;
     var s = gamepad.status();
     gamepadStatus.textContent = s.connected
-      ? '已连接 ' + s.id + '（' + s.active + ' 键按住）'
+      ? '已连接 ' + (s.summary || (s.id + '（' + s.active + ' 键按住）'))
       : (s.secure ? '未检测到手柄，按一下手柄任意键唤醒' : '需要 HTTPS 或 localhost 才能用手柄');
   }
 
@@ -278,6 +297,7 @@
       var muted = typeof coreRef.isMuted === 'function' ? coreRef.isMuted() : false;
       var fn = typeof coreRef.setMute === 'function' ? coreRef.setMute : coreRef.setMuted;
       if (typeof fn === 'function') fn.call(coreRef, !muted);
+      if (muted) ensureAudioActive();
       soundBtn.textContent = muted ? '声音' : '静音';
       soundBtn.classList.toggle('active', !muted);
     });

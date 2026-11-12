@@ -1,6 +1,6 @@
 // shared/web/gamepad.js
 // 蓝牙手柄：浏览器标准 Gamepad 映射，轮询只在状态变化时经输入桥 setButton 下发。
-// 纯逻辑（getGamepads 可注入），可在 Node 里做映射 / 边沿 / 断开断言。
+// 支持双手柄独立映射（1P 与 2P），纯逻辑（getGamepads 可注入），可在 Node 里做映射 / 边沿 / 断开断言。
 (function (root) {
   'use strict';
 
@@ -63,9 +63,8 @@
       ? opts.isSecure
       : (typeof window !== 'undefined' ? !!window.isSecureContext : true);
 
-    var prev = {};       // norm -> 是否按下
-    var connected = false;
-    var lastId = '';
+    var prevPads = [{}, {}]; // 索引 0: 1P, 索引 1: 2P
+    var padInfo = [{ connected: false, id: '', active: 0 }, { connected: false, id: '', active: 0 }];
 
     function buttonPressed(pad, idx) {
       var b = pad.buttons && pad.buttons[idx];
@@ -88,45 +87,71 @@
       return set;
     }
 
-    function releaseAll() {
+    function releasePad(pIdx) {
+      var p = pIdx + 1;
+      var prev = prevPads[pIdx] || {};
       Object.keys(prev).forEach(function (norm) {
-        if (prev[norm]) bridge.release(norm);
+        if (prev[norm]) bridge.release(norm, true, p);
       });
-      prev = {};
+      prevPads[pIdx] = {};
+      padInfo[pIdx] = { connected: false, id: '', active: 0 };
     }
 
     function poll() {
-      var pads = [];
-      try { pads = getGamepads() || []; } catch (err) { pads = []; }
-      var pad = null;
-      for (var i = 0; i < pads.length; i++) {
-        if (pads[i] && pads[i].connected !== false) { pad = pads[i]; break; }
+      var rawPads = [];
+      try { rawPads = getGamepads() || []; } catch (err) { rawPads = []; }
+      var activePads = [];
+      for (var i = 0; i < rawPads.length; i++) {
+        if (rawPads[i] && rawPads[i].connected !== false) {
+          activePads.push(rawPads[i]);
+        }
       }
-      if (!pad) {
-        if (connected) releaseAll();
-        connected = false;
-        lastId = '';
-        return status();
-      }
-      connected = true;
-      lastId = pad.id || pad.index != null ? String(pad.id || pad.index) : 'gamepad';
 
-      var desired = desiredSet(pad);
-      Object.keys(desired).forEach(function (norm) {
-        if (!prev[norm]) { bridge.press(norm); prev[norm] = true; }
-      });
-      Object.keys(prev).forEach(function (norm) {
-        if (prev[norm] && !desired[norm]) { bridge.release(norm); prev[norm] = false; }
-      });
+      for (var pIdx = 0; pIdx < 2; pIdx++) {
+        var pad = activePads[pIdx];
+        var p = pIdx + 1;
+        var prev = prevPads[pIdx] || {};
+
+        if (!pad) {
+          if (padInfo[pIdx].connected) releasePad(pIdx);
+          continue;
+        }
+
+        padInfo[pIdx].connected = true;
+        padInfo[pIdx].id = pad.id ? pad.id.split('(')[0].trim() : (pad.index != null ? String(pad.index) : 'gamepad' + p);
+
+        var desired = desiredSet(pad);
+        Object.keys(desired).forEach(function (norm) {
+          if (!prev[norm]) { bridge.press(norm, p); prev[norm] = true; }
+        });
+        Object.keys(prev).forEach(function (norm) {
+          if (prev[norm] && !desired[norm]) { bridge.release(norm, false, p); prev[norm] = false; }
+        });
+        prevPads[pIdx] = prev;
+        padInfo[pIdx].active = Object.keys(prev).filter(function (n) { return prev[n]; }).length;
+      }
       return status();
     }
 
     function status() {
+      var connCount = (padInfo[0].connected ? 1 : 0) + (padInfo[1].connected ? 1 : 0);
+      var summary = '';
+      if (connCount === 0) {
+        summary = '未检测到手柄';
+      } else if (connCount === 1) {
+        summary = '1P: ' + padInfo[0].id + (padInfo[0].active ? ' (' + padInfo[0].active + ' 键按住)' : '');
+      } else {
+        summary = '1P: ' + padInfo[0].id + ' | 2P: ' + padInfo[1].id;
+      }
       return {
-        connected: connected,
+        connected: connCount > 0,
+        count: connCount,
         secure: secure,
-        id: lastId,
-        active: Object.keys(prev).filter(function (n) { return prev[n]; }).length,
+        id: padInfo[0].connected ? padInfo[0].id : (padInfo[1].connected ? padInfo[1].id : ''),
+        summary: summary,
+        p1: padInfo[0],
+        p2: padInfo[1],
+        active: padInfo[0].active + padInfo[1].active,
         bindings: bindings.buttonToNorm
       };
     }
@@ -134,7 +159,7 @@
     return {
       poll: poll,
       status: status,
-      disconnect: function () { connected = false; lastId = ''; releaseAll(); },
+      disconnect: function () { releasePad(0); releasePad(1); },
       bindings: bindings,
       deadzone: deadzone
     };

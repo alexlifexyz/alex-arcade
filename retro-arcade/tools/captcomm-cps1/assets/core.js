@@ -56,6 +56,8 @@
 
   const btnState = {};
   const holdBuffer = {};
+  const btnStateP2 = {};
+  const holdBufferP2 = {};
 
   // 本 CPS1 端口的 g_frame 掩码：bit4/5 为前两键，bit6 开始，bit7 投币，bit16 为第三键。
   const BTN_ATTACK = 16;
@@ -570,6 +572,8 @@
         }
         for (const k in btnState) btnState[k] = false;
         for (const k in holdBuffer) holdBuffer[k] = 0;
+        for (const k in btnStateP2) btnStateP2[k] = false;
+        for (const k in holdBufferP2) holdBufferP2[k] = 0;
         stepFrames(15, 0);
         renderFrame();
         lastFrameTime = 0;

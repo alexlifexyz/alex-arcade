@@ -189,6 +189,15 @@
     right: false
   };
 
+  // 2P 控制器状态跟踪 (双手柄独立)
+  let startHoldFramesP2 = 0;
+  let selectHoldFramesP2 = 0;
+  const rawButtonsP2 = {
+    up: false, down: false, left: false, right: false,
+    a: false, b: false, ta: false, tb: false, jump: false,
+    select: false, start: false
+  };
+
   // 全局暴露 GGEMU_CORE 内核适配器
   window.GGEMU_CORE = {
     // 经典 FC 两键布局规范（遵从 AGENTS.md）
@@ -397,23 +406,36 @@
       return speedMultiplier;
     },
 
-    setButton: function (btn, down) {
-      activateAudio();
-
-      if (btn === "start") {
-        rawButtons.start = down;
-        if (down) startHoldFrames = 8; // 保底维持 8 帧，确保 100% 触发进关
-      } else if (btn === "select") {
-        rawButtons.select = down;
-        if (down) selectHoldFrames = 8; // 保底维持 8 帧
-      } else if (btn === "a") {
-        rawButtons.a = down;
-      } else if (btn === "b") {
-        rawButtons.b = down;
-      } else if (btn === "x") {
-        rawButtons.x = down;
-      } else if (rawButtons.hasOwnProperty(btn)) {
-        rawButtons[btn] = down;
+    setButton: function(btn, pressed, player) {
+      if (!btn) return;
+      const isP2 = (player === 2 || String(btn).startsWith("p2_"));
+      const b = String(btn).toLowerCase().replace(/^btn-/, "").replace(/^p[12]_/, "");
+      const target = isP2 ? rawButtonsP2 : rawButtons;
+      if (b === "up") target.up = !!pressed;
+      else if (b === "down") target.down = !!pressed;
+      else if (b === "left") target.left = !!pressed;
+      else if (b === "right") target.right = !!pressed;
+      else if (b === "a") target.a = !!pressed;
+      else if (b === "b") target.b = !!pressed;
+      else if (b === "ta") target.ta = !!pressed;
+      else if (b === "tb") target.tb = !!pressed;
+      else if (b === "jump") target.jump = !!pressed;
+      else if (b === "start") {
+        target.start = !!pressed;
+        if (pressed) {
+          if (isP2) startHoldFramesP2 = 8;
+          else {
+            try { startHoldFrames = 8; } catch(_) {}
+          }
+        }
+      } else if (b === "select") {
+        target.select = !!pressed;
+        if (pressed) {
+          if (isP2) selectHoldFramesP2 = 8;
+          else {
+            try { selectHoldFrames = 8; } catch(_) {}
+          }
+        }
       }
     },
 

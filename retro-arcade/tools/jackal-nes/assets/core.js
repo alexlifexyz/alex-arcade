@@ -50,6 +50,20 @@
     start: false
   };
 
+  // 2P START / SELECT 8 帧按压缓冲与按键状态跟踪
+  let startHoldFramesP2 = 0;
+  let selectHoldFramesP2 = 0;
+  const rawButtonsP2 = {
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+    a: false,
+    b: false,
+    select: false,
+    start: false
+  };
+
   // NES Controller 映射表 (Player 1)
   // 0: A, 1: B, 2: Select, 3: Start, 4: Up, 5: Down, 6: Left, 7: Right
   const NES_BTN = {
@@ -226,30 +240,45 @@
   function tick() {
     if (!isBooted || isPaused) return;
 
-    // 1. 8 帧按键防漏缓冲
+    // 1. 8 帧按键防漏缓冲 (1P 与 2P)
     const effectiveStart = rawButtons.start || (startHoldFrames > 0);
     if (startHoldFrames > 0) startHoldFrames--;
 
     const effectiveSelect = rawButtons.select || (selectHoldFrames > 0);
     if (selectHoldFrames > 0) selectHoldFrames--;
 
-    // 2. 将按键状态写入 NES 控制器
-    const setBtn = (btnIndex, isDown) => {
+    const effectiveStartP2 = rawButtonsP2.start || (startHoldFramesP2 > 0);
+    if (startHoldFramesP2 > 0) startHoldFramesP2--;
+
+    const effectiveSelectP2 = rawButtonsP2.select || (selectHoldFramesP2 > 0);
+    if (selectHoldFramesP2 > 0) selectHoldFramesP2--;
+
+    // 2. 将按键状态写入 NES 控制器 (1P & 2P 双人手柄完全独立)
+    const setBtn = (playerIndex, btnIndex, isDown) => {
       if (isDown) {
-        nes.buttonDown(1, btnIndex);
+        nes.buttonDown(playerIndex, btnIndex);
       } else {
-        nes.buttonUp(1, btnIndex);
+        nes.buttonUp(playerIndex, btnIndex);
       }
     };
 
-    setBtn(NES_BTN.up, rawButtons.up);
-    setBtn(NES_BTN.down, rawButtons.down);
-    setBtn(NES_BTN.left, rawButtons.left);
-    setBtn(NES_BTN.right, rawButtons.right);
-    setBtn(NES_BTN.b, rawButtons.b);
-    setBtn(NES_BTN.a, rawButtons.a);
-    setBtn(NES_BTN.start, effectiveStart);
-    setBtn(NES_BTN.select, effectiveSelect);
+    setBtn(1, NES_BTN.up, rawButtons.up);
+    setBtn(1, NES_BTN.down, rawButtons.down);
+    setBtn(1, NES_BTN.left, rawButtons.left);
+    setBtn(1, NES_BTN.right, rawButtons.right);
+    setBtn(1, NES_BTN.b, rawButtons.b);
+    setBtn(1, NES_BTN.a, rawButtons.a);
+    setBtn(1, NES_BTN.start, effectiveStart);
+    setBtn(1, NES_BTN.select, effectiveSelect);
+
+    setBtn(2, NES_BTN.up, rawButtonsP2.up);
+    setBtn(2, NES_BTN.down, rawButtonsP2.down);
+    setBtn(2, NES_BTN.left, rawButtonsP2.left);
+    setBtn(2, NES_BTN.right, rawButtonsP2.right);
+    setBtn(2, NES_BTN.b, rawButtonsP2.b);
+    setBtn(2, NES_BTN.a, rawButtonsP2.a);
+    setBtn(2, NES_BTN.start, effectiveStartP2);
+    setBtn(2, NES_BTN.select, effectiveSelectP2);
 
     if (lives99) {
       if (!syncLifePatch()) lives99 = false;
@@ -345,21 +374,29 @@
 
     tick: tick,
 
-    setButton: function(btn, pressed) {
+    setButton: function(btn, pressed, player) {
       if (!btn) return;
-      const b = String(btn).toLowerCase().replace(/^btn-/, "");
-      if (b === "up") rawButtons.up = !!pressed;
-      else if (b === "down") rawButtons.down = !!pressed;
-      else if (b === "left") rawButtons.left = !!pressed;
-      else if (b === "right") rawButtons.right = !!pressed;
-      else if (b === "a") rawButtons.a = !!pressed; // A 键抛炸药包
-      else if (b === "b") rawButtons.b = !!pressed; // B 键打子弹
+      const p = (player === 2 || String(btn).startsWith("p2_")) ? 2 : 1;
+      const b = String(btn).toLowerCase().replace(/^btn-/, "").replace(/^p[12]_/, "");
+      const target = (p === 2) ? rawButtonsP2 : rawButtons;
+      if (b === "up") target.up = !!pressed;
+      else if (b === "down") target.down = !!pressed;
+      else if (b === "left") target.left = !!pressed;
+      else if (b === "right") target.right = !!pressed;
+      else if (b === "a") target.a = !!pressed; // A 键抛炸药包
+      else if (b === "b") target.b = !!pressed; // B 键打子弹
       else if (b === "start") {
-        rawButtons.start = !!pressed;
-        if (pressed) startHoldFrames = 8;
+        target.start = !!pressed;
+        if (pressed) {
+          if (p === 2) startHoldFramesP2 = 8;
+          else startHoldFrames = 8;
+        }
       } else if (b === "select") {
-        rawButtons.select = !!pressed;
-        if (pressed) selectHoldFrames = 8;
+        target.select = !!pressed;
+        if (pressed) {
+          if (p === 2) selectHoldFramesP2 = 8;
+          else selectHoldFrames = 8;
+        }
       }
     },
 
@@ -422,6 +459,12 @@
     reset: function() {
       lives99 = false;
       speedMultiplier = 1;
+      Object.keys(rawButtons).forEach(k => rawButtons[k] = false);
+      Object.keys(rawButtonsP2).forEach(k => rawButtonsP2[k] = false);
+      startHoldFrames = 0;
+      selectHoldFrames = 0;
+      startHoldFramesP2 = 0;
+      selectHoldFramesP2 = 0;
       const rom = (typeof window !== "undefined" && window.ROM_DATA) ? window.ROM_DATA : null;
       this.boot(rom);
       if (!isMute) activateAudio();
@@ -515,6 +558,14 @@
       return lives99;
     },
 
+    setGuideNotes: function(enable) {
+      return this.setLives99(enable);
+    },
+
+    isGuideNotes: function() {
+      return lives99;
+    },
+
     isLives99: function() {
       return lives99;
     },
@@ -538,144 +589,5 @@
   }
   if (typeof module !== "undefined" && module.exports) {
     module.exports = coreInstance;
-  }
-
-  // 绑定 DOM 交互控制面板 (标准4键底栏：存档、3× 加速、设置、59s 录屏)
-  if (typeof document !== "undefined") {
-    function initUI() {
-      const btnSave = document.getElementById("btn-save");
-      const btnFast = document.getElementById("btn-fast");
-      const btnSettings = document.getElementById("btn-settings");
-      const toast = document.getElementById("toast");
-
-      function showToast(text, duration) {
-        if (!toast) return;
-        toast.textContent = text;
-        toast.classList.add("show");
-        setTimeout(function() {
-          toast.classList.remove("show");
-        }, duration || 2000);
-      }
-
-      if (btnSave) {
-        let savedState = null;
-        btnSave.addEventListener("click", function() {
-          if (!savedState) {
-            savedState = coreInstance.saveState();
-            if (savedState) {
-              btnSave.textContent = "读档";
-              showToast("游戏进度已即时保存！再次点击可立即读档");
-            }
-          } else {
-            const ok = coreInstance.loadState(savedState);
-            if (ok) {
-              btnSave.textContent = "存档";
-              savedState = null;
-              showToast("已成功读取存档战局！");
-            }
-          }
-        });
-      }
-
-      if (btnFast) {
-        btnFast.addEventListener("click", function() {
-          const spd = coreInstance.toggleSpeed();
-          if (spd > 1) {
-            btnFast.classList.add("active");
-            showToast("已开启 3× 极速模式！");
-          } else {
-            btnFast.classList.remove("active");
-            showToast("已恢复 1× 正常速度");
-          }
-        });
-      }
-
-      const guide = document.getElementById("guide-modal");
-      const btnGuide = document.getElementById("btn-guide");
-      const btnClose = document.getElementById("guide-close");
-      const btnLives = document.getElementById("btn-lives");
-
-      function paintLives() {
-        if (!btnLives) return;
-        const on = coreInstance.isLives99();
-        btnLives.textContent = on ? "关闭九十九条命" : "九十九条命";
-        btnLives.classList.toggle("is-on", on);
-      }
-
-      function openGuide() {
-        if (!guide) return;
-        paintLives();
-        guide.hidden = false;
-      }
-
-      function closeGuide() {
-        if (guide) guide.hidden = true;
-      }
-
-      if (btnGuide) btnGuide.addEventListener("click", openGuide);
-      if (btnClose) btnClose.addEventListener("click", closeGuide);
-      if (guide) {
-        guide.addEventListener("click", function(e) {
-          if (e.target === guide) closeGuide();
-        });
-      }
-      if (btnLives) {
-        btnLives.addEventListener("click", function() {
-          const next = coreInstance.setLives99(!coreInstance.isLives99());
-          paintLives();
-          if (next) showToast("这一局按九十九条命");
-          else showToast("已回到原版命数");
-        });
-      }
-
-      const btnSound = document.getElementById("btn-sound");
-      function paintSound() {
-        if (!btnSound) return;
-        const muted = coreInstance.isMuted();
-        btnSound.textContent = muted ? "静音" : "声音";
-        if (btnSound.classList && typeof btnSound.classList.toggle === "function") {
-          btnSound.classList.toggle("is-muted", muted);
-        }
-      }
-      paintSound();
-      if (btnSound) {
-        btnSound.addEventListener("click", function() {
-          const muted = coreInstance.setMute(!coreInstance.isMuted());
-          paintSound();
-          if (!muted) coreInstance.activateAudio();
-          showToast(muted ? "声音已关" : "声音已开");
-        });
-      }
-
-      const btnReset = document.getElementById("btn-reset");
-      let resetArm = 0;
-      let resetStamp = 0;
-      function onReset(e) {
-        const now = Date.now();
-        if (e.type === "click" && now - resetStamp < 450) return;
-        resetStamp = now;
-        if (resetArm && now - resetArm < 2000) {
-          resetArm = 0;
-          coreInstance.reset();
-          paintLives();
-          paintSound();
-          showToast("已回到标题画面");
-        } else {
-          resetArm = now;
-          showToast("再点一次复位");
-        }
-      }
-      if (btnReset) {
-        btnReset.addEventListener("touchend", onReset);
-        btnReset.addEventListener("click", onReset);
-      }
-
-    }
-
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", initUI);
-    } else {
-      initUI();
-    }
   }
 })();

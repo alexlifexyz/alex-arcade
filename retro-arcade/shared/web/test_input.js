@@ -313,4 +313,49 @@ test('Gamepad 边沿触发、摇杆死区与断开全释放', () => {
   assert.ok(h.calls.filter((c) => !c.pressed).length >= 3, '断开时所有按住的键都要释放');
 });
 
+test('Gamepad 双手柄独立映射（1P 与 2P 并发操控与分别断开）', () => {
+  const h = harness(PAD_TWO);
+  let p1 = {
+    id: '8BitDo SN30 Pro',
+    connected: true,
+    buttons: Array.from({ length: 16 }, () => ({ pressed: false })),
+    axes: [0, 0]
+  };
+  let p2 = {
+    id: 'GameSir Wireless Controller',
+    connected: true,
+    buttons: Array.from({ length: 16 }, () => ({ pressed: false })),
+    axes: [0, 0]
+  };
+
+  const gp = GP.createGamepad({
+    bridge: h.bridge,
+    keymap: h.bridge.getKeymap(),
+    getGamepads: () => [p1, p2],
+    isSecure: true
+  });
+
+  gp.poll();
+  assert.strictEqual(gp.status().connected, true);
+  assert.strictEqual(gp.status().count, 2);
+
+  // 1P 按下 A 键 (buttons[1] -> a)，2P 按下 B 键 (buttons[0] -> b)
+  p1.buttons[1].pressed = true;
+  p2.buttons[0].pressed = true;
+  gp.poll();
+
+  const c1 = h.bridge.log.filter((c) => c.player === 1 && c.pressed);
+  const c2 = h.bridge.log.filter((c) => c.player === 2 && c.pressed);
+  assert.ok(c1.some((c) => c.id === 'a'), '1P 动作键下发至 player 1');
+  assert.ok(c2.some((c) => c.id === 'b'), '2P 动作键下发至 player 2');
+
+  // 2P 断开
+  p2 = null;
+  gp.poll();
+  assert.strictEqual(gp.status().count, 1);
+  const c2_rel = h.bridge.log.filter((c) => c.player === 2 && !c.pressed);
+  assert.ok(c2_rel.some((c) => c.id === 'b'), '2P 断开时 2P 按键安全释放');
+  assert.strictEqual(h.bridge.log.filter((c) => c.player === 1 && !c.pressed).length, 0, '1P 按键不受 2P 断开影响');
+});
+
 console.log('\n输入桥 / 虚拟键 / 手柄：' + passed + ' 组断言全部 PASS');

@@ -48,50 +48,55 @@
     var now = opts.now || function () { return Date.now(); };
     var setTimer = opts.setTimeout || function (fn, ms) { return setTimeout(fn, ms); };
     var clearTimer = opts.clearTimeout || function (id) { return clearTimeout(id); };
-    var held = {}; // norm -> { since, pendingRelease }
+    var held = {}; // key: norm + '@' + player -> { since, pendingRelease, entry, norm, player }
     var log = [];  // 下发记录，供测试与页面诊断
 
-    function send(entry, pressed) {
+    function send(entry, pressed, player) {
       if (!core || typeof core.setButton !== 'function') return false;
+      var p = player || 1;
       try {
-        core.setButton(entry.rawId, !!pressed);
-        log.push({ id: entry.rawId, pressed: !!pressed, t: now() });
+        core.setButton(entry.rawId, !!pressed, p);
+        log.push({ id: entry.rawId, pressed: !!pressed, player: p, t: now() });
         return true;
       } catch (err) {
-        log.push({ id: entry.rawId, error: String(err), t: now() });
+        log.push({ id: entry.rawId, error: String(err), player: p, t: now() });
         return false;
       }
     }
 
-    function press(normOrRaw) {
+    function press(normOrRaw, player) {
+      var p = player || 1;
       var norm = normalizeId(normOrRaw);
       var entry = keymap.map[norm];
       if (!entry) return false;
-      var h = held[norm];
+      var key = norm + '@' + p;
+      var h = held[key];
       if (h && h.pendingRelease) {
         clearTimer(h.pendingRelease);
         h.pendingRelease = null;
       }
       if (!h) {
-        held[norm] = { since: now(), pendingRelease: null };
-        send(entry, true);
+        held[key] = { since: now(), pendingRelease: null, entry: entry, norm: norm, player: p };
+        send(entry, true, p);
       }
       return true;
     }
 
-    function release(normOrRaw, immediate) {
+    function release(normOrRaw, immediate, player) {
+      var p = player || 1;
       var norm = normalizeId(normOrRaw);
       var entry = keymap.map[norm];
-      var h = held[norm];
+      var key = norm + '@' + p;
+      var h = held[key];
       if (!entry || !h) return false;
       var wait = holdMs - (now() - h.since);
       if (!immediate && wait > 0) {
         if (h.pendingRelease) clearTimer(h.pendingRelease);
         h.pendingRelease = setTimer(function () {
-          var cur = held[norm];
+          var cur = held[key];
           if (!cur) return;
-          delete held[norm];
-          send(entry, false);
+          delete held[key];
+          send(entry, false, p);
         }, wait);
         return true;
       }
@@ -99,24 +104,25 @@
         clearTimer(h.pendingRelease);
         h.pendingRelease = null;
       }
-      delete held[norm];
-      send(entry, false);
+      delete held[key];
+      send(entry, false, p);
       return true;
     }
 
-    function releaseAll() {
+    function releaseAll(targetPlayer) {
+      var filterPlayer = (typeof targetPlayer === 'number') ? targetPlayer : null;
       var keys = Object.keys(held);
-      var i;
-      for (i = 0; i < keys.length; i++) {
-        if (held[keys[i]] && held[keys[i]].pendingRelease) {
-          clearTimer(held[keys[i]].pendingRelease);
-        }
+      var count = 0;
+      for (var i = 0; i < keys.length; i++) {
+        var h = held[keys[i]];
+        if (!h) continue;
+        if (filterPlayer && h.player !== filterPlayer) continue;
+        if (h.pendingRelease) clearTimer(h.pendingRelease);
+        delete held[keys[i]];
+        send(h.entry, false, h.player);
+        count++;
       }
-      held = {};
-      for (i = 0; i < keys.length; i++) {
-        if (keymap.map[keys[i]]) send(keymap.map[keys[i]], false);
-      }
-      return keys.length;
+      return count;
     }
 
     function attach(win, doc, frame) {
@@ -143,7 +149,7 @@
       handleBlur: releaseAll,
       handleModeChange: releaseAll,
       handleReload: releaseAll,
-      held: function () { return Object.keys(held); },
+      held: function () { return Object.keys(held).map(function (k) { return held[k].norm; }); },
       log: log,
       holdMs: holdMs,
       attach: attach,

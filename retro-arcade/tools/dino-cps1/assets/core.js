@@ -54,6 +54,8 @@
 
   const btnState = {};
   const holdBuffer = {};
+  const btnStateP2 = {};
+  const holdBufferP2 = {};
 
   const BTN_MAP = {
     up: 1,
@@ -92,14 +94,25 @@
         mask |= BTN_MAP[k];
       }
     }
-    // 连发逻辑：X 键按下时隔帧送攻击信号
     if (btnState.x && ((turboCounter >> 1) & 1) === 0) {
       mask |= 16;
     }
-    // 物理防互冲：上下不共存，左右不共存
     if ((mask & 3) === 3) mask &= ~3;
     if ((mask & 12) === 12) mask &= ~12;
-    return mask;
+
+    let mask2 = 0;
+    for (const k in btnStateP2) {
+      if ((btnStateP2[k] || (holdBufferP2[k] && holdBufferP2[k] > 0)) && BTN_MAP[k]) {
+        mask2 |= BTN_MAP[k];
+      }
+    }
+    if (btnStateP2.x && ((turboCounter >> 1) & 1) === 0) {
+      mask2 |= 16;
+    }
+    if ((mask2 & 3) === 3) mask2 &= ~3;
+    if ((mask2 & 12) === 12) mask2 &= ~12;
+
+    return (mask & 0xFF) | ((mask2 & 0xFF) << 8);
   }
 
   const KEY_MAP = {
@@ -333,11 +346,14 @@
 
   let initialCleanState = null;
 
-  function setButton(btnId, isPressed) {
-    const norm = String(btnId || "").toLowerCase().replace(/^btn-/, "");
-    btnState[norm] = !!isPressed;
+  function setButton(btnId, isPressed, player) {
+    const isP2 = (player === 2 || String(btnId).startsWith("p2_"));
+    const norm = String(btnId || "").toLowerCase().replace(/^btn-/, "").replace(/^p[12]_/, "");
+    const targetState = isP2 ? btnStateP2 : btnState;
+    const targetHold = isP2 ? holdBufferP2 : holdBuffer;
+    targetState[norm] = !!isPressed;
     if (isPressed) {
-      holdBuffer[norm] = 8;
+      targetHold[norm] = 8;
     }
   }
 
@@ -494,9 +510,12 @@
 
           emu.g_frame(computeInputs(), isLastStep ? 1 : 0);
 
-          // 递减防漏按键缓冲
+          // 递减防漏按键缓冲 (1P & 2P)
           for (const k in holdBuffer) {
             if (holdBuffer[k] > 0) holdBuffer[k]--;
+          }
+          for (const k in holdBufferP2) {
+            if (holdBufferP2[k] > 0) holdBufferP2[k]--;
           }
           turboCounter++;
 
@@ -560,6 +579,8 @@
         }
         for (const k in btnState) btnState[k] = false;
         for (const k in holdBuffer) holdBuffer[k] = 0;
+        for (const k in btnStateP2) btnStateP2[k] = false;
+        for (const k in holdBufferP2) holdBufferP2[k] = 0;
 
         // 步进 15 帧并渲染
         for (let f = 0; f < 15; f++) {

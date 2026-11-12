@@ -50,6 +50,15 @@
     start: false    // 开始 / 暂停
   };
 
+  // 2P 控制器状态跟踪 (双手柄独立)
+  let startHoldFramesP2 = 0;
+  let selectHoldFramesP2 = 0;
+  const rawButtonsP2 = {
+    up: false, down: false, left: false, right: false,
+    a: false, b: false, ta: false, tb: false, jump: false,
+    select: false, start: false
+  };
+
   // NES Controller 映射表 (Player 1)
   // 0: A, 1: B, 2: Select, 3: Start, 4: Up, 5: Down, 6: Left, 7: Right
   const NES_BTN = {
@@ -202,26 +211,33 @@
     const effectiveJump = rawButtons.jump || (jumpHoldFrames > 0);
     if (jumpHoldFrames > 0) jumpHoldFrames--;
 
-    // 3. 旋风腿智能宏判定 (原地起跳并在滞空最高点按 B)
+    // 3. 旋风腿智能宏判定 (自锁步进：原地起跳并在滞空最高点按 B，轻点即可完整施展)
     let macroPressA = false;
     let macroPressB = false;
     let suppressHoriz = false;
 
-    if (rawButtons.sp) {
-      if (spMacroTick < 0) spMacroTick = 0;
+    if (rawButtons.sp && spMacroTick < 0) {
+      spMacroTick = 0; // 玩家轻触触发，启动宏状态机
+    }
+
+    if (spMacroTick >= 0) {
       spMacroTick++;
-      const m = spMacroTick % 36;
-      if (m < 5) {
-        // 0-4 帧：原地同时按 A+B 起跳，抑制水平方向
+      if (spMacroTick < 6) {
+        // 0-5 帧：原地同时按 A+B 起跳，抑制水平方向
         macroPressA = true;
         macroPressB = true;
         suppressHoriz = true;
-      } else if (m >= 15 && m <= 22) {
-        // 15-22 帧：滞空最高点按 B 键打出旋风腿！
+      } else if (spMacroTick >= 15 && spMacroTick <= 24) {
+        // 15-24 帧：滞空最高点按 B 键踢出旋风腿！
         macroPressB = true;
+      } else if (spMacroTick > 28) {
+        // 动作周期结束，若玩家松手则复位；若按住不放则等待松手重新触发
+        if (!rawButtons.sp) {
+          spMacroTick = -1;
+        } else if (spMacroTick > 35) {
+          spMacroTick = 0;
+        }
       }
-    } else {
-      spMacroTick = -1;
     }
 
     // 4. 将按键状态写入 NES 控制器
@@ -336,26 +352,36 @@
 
     tick: tick,
 
-    setButton: function(btn, pressed) {
+    setButton: function(btn, pressed, player) {
       if (!btn) return;
-      const b = String(btn).toLowerCase().replace(/^btn-/, "");
-      if (b === "up") rawButtons.up = !!pressed;
-      else if (b === "down") rawButtons.down = !!pressed;
-      else if (b === "left") rawButtons.left = !!pressed;
-      else if (b === "right") rawButtons.right = !!pressed;
-      else if (b === "punch" || b === "y") rawButtons.punch = !!pressed;
-      else if (b === "kick" || b === "a") rawButtons.kick = !!pressed;
-      else if (b === "jump") {
-        rawButtons.jump = !!pressed;
-        if (pressed) jumpHoldFrames = 6;
-      } else if (b === "sp" || b === "x") {
-        rawButtons.sp = !!pressed;
-      } else if (b === "start") {
-        rawButtons.start = !!pressed;
-        if (pressed) startHoldFrames = 8;
+      const isP2 = (player === 2 || String(btn).startsWith("p2_"));
+      const b = String(btn).toLowerCase().replace(/^btn-/, "").replace(/^p[12]_/, "");
+      const target = isP2 ? rawButtonsP2 : rawButtons;
+      if (b === "up") target.up = !!pressed;
+      else if (b === "down") target.down = !!pressed;
+      else if (b === "left") target.left = !!pressed;
+      else if (b === "right") target.right = !!pressed;
+      else if (b === "a") target.a = !!pressed;
+      else if (b === "b") target.b = !!pressed;
+      else if (b === "ta") target.ta = !!pressed;
+      else if (b === "tb") target.tb = !!pressed;
+      else if (b === "jump") target.jump = !!pressed;
+      else if (b === "start") {
+        target.start = !!pressed;
+        if (pressed) {
+          if (isP2) startHoldFramesP2 = 8;
+          else {
+            try { startHoldFrames = 8; } catch(_) {}
+          }
+        }
       } else if (b === "select") {
-        rawButtons.select = !!pressed;
-        if (pressed) selectHoldFrames = 8;
+        target.select = !!pressed;
+        if (pressed) {
+          if (isP2) selectHoldFramesP2 = 8;
+          else {
+            try { selectHoldFrames = 8; } catch(_) {}
+          }
+        }
       }
     },
 

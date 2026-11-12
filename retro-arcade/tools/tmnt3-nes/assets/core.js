@@ -29,7 +29,7 @@
   // 按键防漏保底计数器 (确保真机轻点也能维持 8 帧被 NES CPU 完整采样)
   let startHoldFrames = 0;
   let selectHoldFrames = 0;
-  let superHoldFrames = 0;
+  let superStep = 0; // 必杀技绝招微步进时序状态机 (先起跳 2 帧，离地瞬间攻击 3 帧，100% 触发旋风斩)
 
   // 离线渲染画板
   const offscreen = document.createElement("canvas");
@@ -177,6 +177,15 @@
     start: false,  // 开始/暂停
     sp: false,     // X 极速连击
     ab: false      // A 一键绝招宏 (A+B)
+  };
+
+  // 2P 控制器状态跟踪 (双手柄独立)
+  let startHoldFramesP2 = 0;
+  let selectHoldFramesP2 = 0;
+  const rawButtonsP2 = {
+    up: false, down: false, left: false, right: false,
+    a: false, b: false, ta: false, tb: false, jump: false,
+    select: false, start: false
   };
 
   // 胶囊功能键定义 (对齐标杆：选择与开始)
@@ -355,9 +364,19 @@
       const effectiveSelect = rawButtons.select || (selectHoldFrames > 0);
       if (selectHoldFrames > 0) selectHoldFrames--;
 
-      // 一键必杀绝招宏：同时触发 A(跳跃) + B(攻击)
-      const isSuperActive = rawButtons.ab || (superHoldFrames > 0);
-      if (superHoldFrames > 0) superHoldFrames--;
+      // 一键必杀绝招宏：严格遵循 NES 原版卡带判定（先轻跃离地 2 帧，随后紧接重击 3 帧，必出绝招）
+      let superJump = false;
+      let superAttack = false;
+      if (superStep > 0) {
+        if (superStep >= 4) {
+          superJump = true;
+          superAttack = false;
+        } else {
+          superJump = false;
+          superAttack = true;
+        }
+        superStep--;
+      }
 
       const setBtn = (btnIndex, isDown) => {
         if (isDown) {
@@ -378,8 +397,8 @@
       setBtn(NES_BTN.start, effectiveStart);
 
       // 动作按键：跳跃(A) 与 攻击(B)
-      const finalJump = rawButtons.jump || rawButtons.a || isSuperActive;
-      const finalAttack = rawButtons.b || turboAttack || isSuperActive;
+      const finalJump = rawButtons.jump || rawButtons.a || superJump;
+      const finalAttack = rawButtons.b || turboAttack || superAttack;
       setBtn(NES_BTN.a, finalJump);
       setBtn(NES_BTN.b, finalAttack);
 
@@ -404,30 +423,36 @@
       return speedMultiplier;
     },
 
-    setButton: function (btn, down) {
-      activateAudio();
-
-      if (btn === "start") {
-        rawButtons.start = down;
-        if (down) startHoldFrames = 8;
-      } else if (btn === "select") {
-        rawButtons.select = down;
-        if (down) selectHoldFrames = 8;
-      } else if (btn === "ab") {
-        rawButtons.ab = down;
-        if (down) superHoldFrames = 6; // 维持 6 帧确保绝招 100% 触发
-      } else if (btn === "jump") {
-        rawButtons.jump = down;
-        rawButtons.a = down;
-      } else if (btn === "sp") {
-        rawButtons.sp = down;
-      } else if (btn === "b") {
-        rawButtons.b = down;
-      } else if (btn === "a") {
-        rawButtons.ab = down;
-        if (down) superHoldFrames = 6;
-      } else if (rawButtons.hasOwnProperty(btn)) {
-        rawButtons[btn] = down;
+    setButton: function(btn, pressed, player) {
+      if (!btn) return;
+      const isP2 = (player === 2 || String(btn).startsWith("p2_"));
+      const b = String(btn).toLowerCase().replace(/^btn-/, "").replace(/^p[12]_/, "");
+      const target = isP2 ? rawButtonsP2 : rawButtons;
+      if (b === "up") target.up = !!pressed;
+      else if (b === "down") target.down = !!pressed;
+      else if (b === "left") target.left = !!pressed;
+      else if (b === "right") target.right = !!pressed;
+      else if (b === "a") target.a = !!pressed;
+      else if (b === "b") target.b = !!pressed;
+      else if (b === "ta") target.ta = !!pressed;
+      else if (b === "tb") target.tb = !!pressed;
+      else if (b === "jump") target.jump = !!pressed;
+      else if (b === "start") {
+        target.start = !!pressed;
+        if (pressed) {
+          if (isP2) startHoldFramesP2 = 8;
+          else {
+            try { startHoldFrames = 8; } catch(_) {}
+          }
+        }
+      } else if (b === "select") {
+        target.select = !!pressed;
+        if (pressed) {
+          if (isP2) selectHoldFramesP2 = 8;
+          else {
+            try { selectHoldFrames = 8; } catch(_) {}
+          }
+        }
       }
     },
 

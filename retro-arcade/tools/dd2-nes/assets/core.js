@@ -37,6 +37,23 @@
     start: false
   };
 
+  // 2P 虚拟按键状态与缓冲 (双手柄独立)
+  let startHoldFramesP2 = 0;
+  let selectHoldFramesP2 = 0;
+  let spMacroTickP2 = -1;
+  const rawButtonsP2 = {
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+    a: false,     // 右攻 (NES A)
+    b: false,     // 左攻 (NES B)
+    jump: false,  // 起跳 (A+B 同时)
+    sp: false,    // 一键旋风腿 / 升龙飞膝智能宏
+    select: false,
+    start: false
+  };
+
   // NES Controller 映射表 (Player 1)
   // 0: A, 1: B, 2: Select, 3: Start, 4: Up, 5: Down, 6: Left, 7: Right
   const NES_BTN = {
@@ -51,7 +68,7 @@
   };
 
   // 音频系统 (44100Hz 双声道环形缓冲区与四重硬件静音锁)
-  const AUDIO_BUF_SIZE = 16384;
+  const AUDIO_BUF_SIZE = 32768;
   const audioRingL = new Float32Array(AUDIO_BUF_SIZE);
   const audioRingR = new Float32Array(AUDIO_BUF_SIZE);
   let audioWritePtr = 0;
@@ -83,7 +100,9 @@
     }
 
     const avail = (audioWritePtr - audioReadPtr + AUDIO_BUF_SIZE) % AUDIO_BUF_SIZE;
-    if (avail < count) {
+    if (avail > count * 8) {
+      audioReadPtr = (audioWritePtr - count * 2 + AUDIO_BUF_SIZE) % AUDIO_BUF_SIZE;
+    } else if (avail < count) {
       for (let i = 0; i < count; i++) {
         outL[i] = 0;
         outR[i] = 0;
@@ -322,6 +341,14 @@
     reset: function() {
       if (!nes) return false;
       try {
+        Object.keys(rawButtons).forEach(k => rawButtons[k] = false);
+        Object.keys(rawButtonsP2).forEach(k => rawButtonsP2[k] = false);
+        startHoldFrames = 0;
+        selectHoldFrames = 0;
+        startHoldFramesP2 = 0;
+        selectHoldFramesP2 = 0;
+        spMacroTick = -1;
+        spMacroTickP2 = -1;
         if (typeof nes.reloadROM === "function") {
           nes.reloadROM();
         } else if (typeof nes.reset === "function") {
@@ -354,19 +381,13 @@
 
       turboTick++;
 
-      // 旋风腿与升龙飞膝智能宏时钟步进
+      // 旋风腿与升龙飞膝智能宏时钟步进 (1P 与 2P)
       let macroPressA = false;
       let macroPressB = false;
 
       if (rawButtons.sp) {
         if (spMacroTick < 0) spMacroTick = 0;
         spMacroTick++;
-        // 宏序列：
-        // 0-3 帧：同时按 A+B 触发起跳
-        // 4-14 帧：松开按键滞空上升
-        // 15-22 帧：滞空最高点触发 A+B / 攻击键 -> 完美触发全屏旋风腿
-        // 23-28 帧：下落
-        // 29-35 帧：落地瞬间蹲伏缓冲 -> 完美触发升龙飞膝
         const m = spMacroTick % 36;
         if (m < 4) {
           macroPressA = true;
@@ -382,39 +403,72 @@
         spMacroTick = -1;
       }
 
-      // 按键防漏 8 帧缓冲
+      let macroPressAP2 = false;
+      let macroPressBP2 = false;
+
+      if (rawButtonsP2.sp) {
+        if (spMacroTickP2 < 0) spMacroTickP2 = 0;
+        spMacroTickP2++;
+        const m2 = spMacroTickP2 % 36;
+        if (m2 < 4) {
+          macroPressAP2 = true;
+          macroPressBP2 = true;
+        } else if (m2 >= 15 && m2 <= 22) {
+          macroPressAP2 = true;
+          macroPressBP2 = true;
+        } else if (m2 >= 29 && m2 <= 34) {
+          macroPressAP2 = true;
+          macroPressBP2 = true;
+        }
+      } else {
+        spMacroTickP2 = -1;
+      }
+
+      // 按键防漏 8 帧缓冲 (1P & 2P)
       const effectiveStart = rawButtons.start || (startHoldFrames > 0);
       if (startHoldFrames > 0) startHoldFrames--;
 
       const effectiveSelect = rawButtons.select || (selectHoldFrames > 0);
       if (selectHoldFrames > 0) selectHoldFrames--;
 
-      // 同步控制器按键状态至 JSNES
-      const setBtn = (btnIndex, isDown) => {
+      const effectiveStartP2 = rawButtonsP2.start || (startHoldFramesP2 > 0);
+      if (startHoldFramesP2 > 0) startHoldFramesP2--;
+
+      const effectiveSelectP2 = rawButtonsP2.select || (selectHoldFramesP2 > 0);
+      if (selectHoldFramesP2 > 0) selectHoldFramesP2--;
+
+      // 同步控制器按键状态至 JSNES (1P & 2P 双人手柄完全独立)
+      const setBtn = (playerIndex, btnIndex, isDown) => {
         if (isDown) {
-          nes.buttonDown(1, btnIndex);
+          nes.buttonDown(playerIndex, btnIndex);
         } else {
-          nes.buttonUp(1, btnIndex);
+          nes.buttonUp(playerIndex, btnIndex);
         }
       };
 
-      // D-Pad
-      setBtn(NES_BTN.up, rawButtons.up);
-      setBtn(NES_BTN.down, rawButtons.down);
-      setBtn(NES_BTN.left, rawButtons.left);
-      setBtn(NES_BTN.right, rawButtons.right);
-
-      // Select & Start
-      setBtn(NES_BTN.select, effectiveSelect);
-      setBtn(NES_BTN.start, effectiveStart);
-
-      // A (右攻) 判定
+      // 1P 控制器同步
+      setBtn(1, NES_BTN.up, rawButtons.up);
+      setBtn(1, NES_BTN.down, rawButtons.down);
+      setBtn(1, NES_BTN.left, rawButtons.left);
+      setBtn(1, NES_BTN.right, rawButtons.right);
+      setBtn(1, NES_BTN.select, effectiveSelect);
+      setBtn(1, NES_BTN.start, effectiveStart);
       const isADown = rawButtons.a || rawButtons.jump || macroPressA;
-      setBtn(NES_BTN.a, isADown);
-
-      // B (左攻) 判定
+      setBtn(1, NES_BTN.a, isADown);
       const isBDown = rawButtons.b || rawButtons.jump || macroPressB;
-      setBtn(NES_BTN.b, isBDown);
+      setBtn(1, NES_BTN.b, isBDown);
+
+      // 2P 控制器同步
+      setBtn(2, NES_BTN.up, rawButtonsP2.up);
+      setBtn(2, NES_BTN.down, rawButtonsP2.down);
+      setBtn(2, NES_BTN.left, rawButtonsP2.left);
+      setBtn(2, NES_BTN.right, rawButtonsP2.right);
+      setBtn(2, NES_BTN.select, effectiveSelectP2);
+      setBtn(2, NES_BTN.start, effectiveStartP2);
+      const isADownP2 = rawButtonsP2.a || rawButtonsP2.jump || macroPressAP2;
+      setBtn(2, NES_BTN.a, isADownP2);
+      const isBDownP2 = rawButtonsP2.b || rawButtonsP2.jump || macroPressBP2;
+      setBtn(2, NES_BTN.b, isBDownP2);
 
       // 执行物理帧步进
       let stepCount = 0;
@@ -430,11 +484,21 @@
       }
     },
 
-    setButton: function(name, isDown) {
-      if (rawButtons.hasOwnProperty(name)) {
-        rawButtons[name] = !!isDown;
-        if (name === "start" && isDown) startHoldFrames = 8;
-        if (name === "select" && isDown) selectHoldFrames = 8;
+    setButton: function(name, isDown, player) {
+      if (!name) return;
+      const p = (player === 2 || String(name).startsWith("p2_")) ? 2 : 1;
+      const b = String(name).toLowerCase().replace(/^btn-/, "").replace(/^p[12]_/, "");
+      const target = (p === 2) ? rawButtonsP2 : rawButtons;
+      if (target.hasOwnProperty(b)) {
+        target[b] = !!isDown;
+        if (b === "start" && isDown) {
+          if (p === 2) startHoldFramesP2 = 8;
+          else startHoldFrames = 8;
+        }
+        if (b === "select" && isDown) {
+          if (p === 2) selectHoldFramesP2 = 8;
+          else selectHoldFrames = 8;
+        }
       }
     },
 

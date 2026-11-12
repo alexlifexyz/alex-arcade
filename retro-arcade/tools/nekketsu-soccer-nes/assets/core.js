@@ -44,6 +44,15 @@
     start: false    // 暂停 / 确定进比赛
   };
 
+  // 2P 控制器状态跟踪 (双手柄独立)
+  let startHoldFramesP2 = 0;
+  let selectHoldFramesP2 = 0;
+  const rawButtonsP2 = {
+    up: false, down: false, left: false, right: false,
+    a: false, b: false, ta: false, tb: false, jump: false,
+    select: false, start: false
+  };
+
   // NES Controller 映射表 (Player 1)
   // 0: A, 1: B, 2: Select, 3: Start, 4: Up, 5: Down, 6: Left, 7: Right
   const NES_BTN = {
@@ -296,21 +305,36 @@
 
     tick: tick,
 
-    setButton: function(btn, pressed) {
+    setButton: function(btn, pressed, player) {
       if (!btn) return;
-      const b = String(btn).toLowerCase().replace(/^btn-/, "");
-      if (b === "up") rawButtons.up = !!pressed;
-      else if (b === "down") rawButtons.down = !!pressed;
-      else if (b === "left") rawButtons.left = !!pressed;
-      else if (b === "right") rawButtons.right = !!pressed;
-      else if (b === "b") rawButtons.b = !!pressed;
-      else if (b === "a") rawButtons.a = !!pressed;
+      const isP2 = (player === 2 || String(btn).startsWith("p2_"));
+      const b = String(btn).toLowerCase().replace(/^btn-/, "").replace(/^p[12]_/, "");
+      const target = isP2 ? rawButtonsP2 : rawButtons;
+      if (b === "up") target.up = !!pressed;
+      else if (b === "down") target.down = !!pressed;
+      else if (b === "left") target.left = !!pressed;
+      else if (b === "right") target.right = !!pressed;
+      else if (b === "a") target.a = !!pressed;
+      else if (b === "b") target.b = !!pressed;
+      else if (b === "ta") target.ta = !!pressed;
+      else if (b === "tb") target.tb = !!pressed;
+      else if (b === "jump") target.jump = !!pressed;
       else if (b === "start") {
-        rawButtons.start = !!pressed;
-        if (pressed) startHoldFrames = 8;
+        target.start = !!pressed;
+        if (pressed) {
+          if (isP2) startHoldFramesP2 = 8;
+          else {
+            try { startHoldFrames = 8; } catch(_) {}
+          }
+        }
       } else if (b === "select") {
-        rawButtons.select = !!pressed;
-        if (pressed) selectHoldFrames = 8;
+        target.select = !!pressed;
+        if (pressed) {
+          if (isP2) selectHoldFramesP2 = 8;
+          else {
+            try { selectHoldFrames = 8; } catch(_) {}
+          }
+        }
       }
     },
 

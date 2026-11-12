@@ -49,6 +49,15 @@
     start: false
   };
 
+  // 2P 控制器状态跟踪 (双手柄独立)
+  let startHoldFramesP2 = 0;
+  let selectHoldFramesP2 = 0;
+  const rawButtonsP2 = {
+    up: false, down: false, left: false, right: false,
+    a: false, b: false, ta: false, tb: false, jump: false,
+    select: false, start: false
+  };
+
   // 胶囊键缓冲守卫 (8帧脉冲防漏按)
   let startHoldFrames = 0;
   let selectHoldFrames = 0;
@@ -459,30 +468,36 @@
       return { w: SCREEN_WIDTH, h: SCREEN_HEIGHT };
     },
 
-    setButton: function(btn, isDown) {
+    setButton: function(btn, pressed, player) {
       if (!btn) return;
-      const b = String(btn).toLowerCase().replace(/^btn-/, "");
-
-      // 别名规整与精准映射
-      if (b === "up") rawButtons.up = !!isDown;
-      else if (b === "down") rawButtons.down = !!isDown;
-      else if (b === "left") rawButtons.left = !!isDown;
-      else if (b === "right") rawButtons.right = !!isDown;
-      else if (b === "b" || b === "jump") rawButtons.b = !!isDown;
-      else if (b === "a" || b === "punch") rawButtons.a = !!isDown;
-      else if (b === "x" || b === "kick" || b === "hard") rawButtons.x = !!isDown;
-      else if (b === "y" || b === "sp" || b === "special") rawButtons.y = !!isDown;
+      const isP2 = (player === 2 || String(btn).startsWith("p2_"));
+      const b = String(btn).toLowerCase().replace(/^btn-/, "").replace(/^p[12]_/, "");
+      const target = isP2 ? rawButtonsP2 : rawButtons;
+      if (b === "up") target.up = !!pressed;
+      else if (b === "down") target.down = !!pressed;
+      else if (b === "left") target.left = !!pressed;
+      else if (b === "right") target.right = !!pressed;
+      else if (b === "a") target.a = !!pressed;
+      else if (b === "b") target.b = !!pressed;
+      else if (b === "ta") target.ta = !!pressed;
+      else if (b === "tb") target.tb = !!pressed;
+      else if (b === "jump") target.jump = !!pressed;
       else if (b === "start") {
-        rawButtons.start = !!isDown;
-        if (isDown) startHoldFrames = 8;
-      }
-      else if (b === "select") {
-        rawButtons.select = !!isDown;
-        if (isDown) selectHoldFrames = 8;
-      }
-
-      if (isDown) {
-        activateAudio();
+        target.start = !!pressed;
+        if (pressed) {
+          if (isP2) startHoldFramesP2 = 8;
+          else {
+            try { startHoldFrames = 8; } catch(_) {}
+          }
+        }
+      } else if (b === "select") {
+        target.select = !!pressed;
+        if (pressed) {
+          if (isP2) selectHoldFramesP2 = 8;
+          else {
+            try { selectHoldFrames = 8; } catch(_) {}
+          }
+        }
       }
     },
 
