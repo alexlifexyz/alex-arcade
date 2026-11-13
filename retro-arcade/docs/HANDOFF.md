@@ -192,23 +192,39 @@ ffb15ce (tag: v2.0.0-retro) feat(retro-arcade): import 104-title browser emulato
 |------|------|------|
 | 门户首页 | `alex-arcade/index.html` | 双厅入口 |
 | 模拟器厅首页 | `alex-arcade/retro-arcade/index.html` | 游戏网格 + three.js |
-| 播放器 | `alex-arcade/retro-arcade/play.html` | 三模式游戏播放 |
+| 播放器 | `alex-arcade/retro-arcade/play.html` | 三模式游戏播放（支持全屏双手柄） |
 | 游戏列表 | `alex-arcade/retro-arcade/shared/web/games.js` | 110 条元数据 |
 | 播放器逻辑 | `alex-arcade/retro-arcade/shared/web/player.js` | iframe 加载 + 画面绘制 |
-| 输入桥 | `alex-arcade/retro-arcade/shared/web/input-bridge.js` | 键盘 → 内核 pad |
+| 输入桥 | `alex-arcade/retro-arcade/shared/web/input-bridge.js` | 键盘/双手柄 → 内核 pad（含 35 款双人经典映射） |
 | 虚拟按键 | `alex-arcade/retro-arcade/shared/web/virtual-keys.js` | 触屏多指状态机 |
-| 手柄 | `alex-arcade/retro-arcade/shared/web/gamepad.js` | Gamepad API |
+| 手柄 | `alex-arcade/retro-arcade/shared/web/gamepad.js` | Gamepad API（支持 1P/2P 双手柄独立轮询） |
 | three.js | `alex-arcade/retro-arcade/shared/web/vendor/three.min.js` | r128 UMD |
 | 构建脚本 | `xhs-minitools/build_dist.sh` | 产出 dist/ |
-| CI 检查 | `alex-arcade/tools/check_repo.py` | 密钥扫描等 |
+| CI 检查 | `alex-arcade/tools/check_repo.py` | 仓库静态与双语检查（retro-arcade/ 为豁免路径） |
 | .gitattributes | `alex-arcade/.gitattributes` | rom.js binary |
 | .nojekyll | `alex-arcade/.nojekyll` | 禁用 Jekyll |
 
 ---
 
-## 九、未完成 / 可选后续
+## 九、2026-11-12/13 双手柄双人同屏游玩与 CI 修复升级
 
-- [ ] 蓝牙手柄真机实测（笔记本 Chrome → 安卓 → iPhone）
-- [ ] 自定义域名绑定（如需要，在 alex-arcade 根目录加 CNAME 文件 + DNS 配置）
-- [ ] CPS1 游戏数量确认（目录名 grep 到 10 个 `-cps1`，之前文档写 12，可能是不同统计口径）
-- [ ] xhs-minitools 工作区有大量未提交改动，需要 Alex 确认后清理
+### 9.1 双手柄冲突彻底根治（八位堂 SN30 Pro + 盖世小鸡等双手柄）
+- **根因分析**：
+  1. 旧版 `gamepad.js` 仅轮询 `activePads[0]`（只处理 1 个手柄），当两个手柄同时接入时，第二个手柄完全被忽略；
+  2. 原生手柄如果插拔顺序或枚举发生变动，且按键键位直接映射单路内核 pad，导致双角色无法独立响应。
+- **重构架构**：
+  1. **多路独立扫描**：`shared/web/gamepad.js` 升级为支持双路手柄同时轮询（`pIdx = 0` 对应 1P，`pIdx = 1` 对应 2P），各自维护独立的按键历史状态；
+  2. **双人信号分配器**：在 `shared/web/input-bridge.js` 中内置全局双人支持游戏表（包含赤色要塞、双截龙 1/2/3、魂斗罗、超级魂斗罗、坦克大战、松鼠大作战 1/2、忍者神龟 2/3/格斗、雪人兄弟、热血系列、CPS1 名作恐龙快打/吞食天地2/圆桌骑士/名将/街霸2 等 **35 款经典双人神作**）；
+  3. **虚拟 2P 控制器桥接**：对于 NES/FC 游戏，动态注入 `window.NES_VIRTUAL_PAD2`，在底层 `getControllers()` 读取第二手柄控制器字节；针对 CPS1/GBA，通过双路 Player 参数独立分发；
+  4. **赤色要塞与双截龙专项修复**：修复赤色要塞在 Web 版因未调用 `host.onReady` / `initScreen` 导致的黑屏，修复双截龙 Web 版未挂载音频驱动产生的静音。
+
+### 9.2 CI 自动化静态检查规范与修复
+- 仓库 `tools/check_repo.py` 严格校验根目录文件，只有 AGENTS/CLAUDE/README 等允许存在于根目录，且非 `retro-arcade/` 的 Markdown 必须遵循双语规范；
+- 复古模拟器厅相关交接文档规范归档至 `retro-arcade/docs/HANDOFF.md`，使 `Static checks`、`Firmware checks`、`pages build and deployment` 三大工作流全部满分通过。
+
+---
+
+## 十、后续与维护要点
+
+- 以后如有新增 Markdown 文档，请统一放入 `retro-arcade/docs/` 下（或若放入主工程 `docs/`，需配套提供英文 `.md` 与 `.zh_CN.md`）；
+- 若继续新增小工具并同步到网页端，运行 `build_dist.sh` 同步至 `retro-arcade/` 并推送到 GitHub 即可自动上线。

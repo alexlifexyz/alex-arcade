@@ -13,3 +13,5 @@ __pycache__/
 build_cloud/
 *.bin
 
+minitool/dist/
+minitool/*.zip
