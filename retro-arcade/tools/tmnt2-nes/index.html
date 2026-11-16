@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>忍者神龟 2：街机版 1990</title>
+  <link rel="stylesheet" href="./assets/style.css" />
+  <script>
+    window.addEventListener('error', function(e) {
+      console.error('[UNCAUGHT ERROR]', e);
+      var msg = (e && e.message) ? e.message : String(e);
+      var box = document.getElementById('debug-err');
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'debug-err';
+        box.style.cssText = 'position:fixed;top:10px;left:10px;right:10px;background:rgba(200,0,0,0.9);color:#fff;padding:12px;border-radius:8px;font-size:12px;z-index:99999;word-break:break-all;';
+        document.body.appendChild(box);
+      }
+      box.textContent = '运行异常: ' + msg;
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      console.error('[UNHANDLED REJECTION]', e);
+    });
+  </script>
+</head>
+<body>
+  <div id="toast" class="toast"></div>
+
+  <div id="guide-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">通关笔记</div>
+        <button id="guide-close" class="modal-close-btn" type="button">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="guide-section author-card">
+          <div class="author-info">
+            <div class="author-name">Alex 游戏百宝箱</div>
+            <div id="author-desc-text" class="author-desc">先按原版玩。想体验进阶走法，关注作者后即可随心勾选。</div>
+          </div>
+          <button id="btn-guide-follow" class="btn-follow" type="button">关注作者 获取进阶笔记走法</button>
+        </div>
+
+        <div class="guide-section">
+          <div class="section-title">笔记走法（可自由独立勾选）</div>
+          <div class="guide-toggles">
+            <div id="toggle-lives" class="toggle-row">
+              <div class="toggle-info">
+                <div class="toggle-name">
+                  <span class="guide-tag gold">增援储备</span>
+                </div>
+                <div class="toggle-desc">后备增援持续在线，多次失误也能从容重返战场。</div>
+              </div>
+              <div class="checkbox-box">
+                <div class="checkbox-mark"></div>
+              </div>
+            </div>
+
+            <div id="toggle-invincible" class="toggle-row">
+              <div class="toggle-info">
+                <div class="toggle-name">
+                  <span class="guide-tag green">龟壳防护</span>
+                </div>
+                <div class="toggle-desc">抵御敌方伤害，近身肉搏与飞踢不减自身体力。</div>
+              </div>
+              <div class="checkbox-box">
+                <div class="checkbox-mark"></div>
+              </div>
+            </div>
+
+            <button id="btn-guide-reset" class="btn-reset-options" type="button">全部按原版来（取消勾选）</button>
+          </div>
+        </div>
+
+        <div class="guide-section">
+          <div class="section-title">卡带原生操作指南</div>
+          <div class="guide-item">
+            <span class="guide-tag gold">清版前进</span>
+            <span class="guide-desc">消灭场景中全部脚忍，出现闪烁箭头指示后即可向右推进。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag red">飞踢绝技</span>
+            <span class="guide-desc">起跳至最高点按攻击键，可施展大威力空中飞踢击倒一排敌人。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag blue">急速挥击</span>
+            <span class="guide-desc">右侧按键支持高速连打，近身压制无需频繁快速点击。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag purple">原版秘诀</span>
+            <span class="guide-desc">标题画面输入“上右右下下下左左左左BA”可选关并增加命数。</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="deck-controls">
+    <div id="toolbar-sub">
+      <button id="btn-reset" type="button">复位</button>
+      <button id="btn-guide" type="button">攻略</button>
+      <button id="btn-sound" type="button">声音</button>
+    </div>
+    <div id="toolbar">
+      <button id="btn-save" type="button">存档</button>
+      <button id="btn-fast" type="button">3× 加速</button>
+      <button id="btn-settings" type="button">设置</button>
+      <button id="btn-record" type="button">59s 录屏</button>
+    </div>
+  </div>
+
+  <canvas id="main-canvas"></canvas>
+
+  <script src="./assets/lzstring.js"></script>
+  <script src="./assets/xhs-bridge.js"></script>
+  <script src="./assets/nes.min.js"></script>
+  <script src="./assets/config.js"></script>
+  <script src="./assets/rom.js"></script>
+  <script src="./assets/core.js"></script>
+  <script src="./assets/skin.js"></script>
+  <script src="./assets/shell.js"></script>
+</body>
+</html>

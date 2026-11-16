@@ -11,7 +11,7 @@ Alex Arcade 是一个在线复古游戏平台，托管在 GitHub Pages 上，包
 | 大厅 | 路径 | 内容 | 在线地址 |
 |------|------|------|---------|
 | 三键街机厅 | `arcade/` | FoloToy AI Passport 掌机原生游戏 | https://alexlifexyz.github.io/alex-arcade/arcade/ |
-| 复古模拟器厅 | `retro-arcade/` | 104 款 FC/GBA/CPS1/GBC/GB/NGPC 浏览器模拟器 | https://alexlifexyz.github.io/alex-arcade/retro-arcade/ |
+| 复古模拟器厅 | `retro-arcade/` | 134 款 FC/SFC/GBA/CPS1/GBC/GB/NGPC 浏览器模拟器 | https://alexlifexyz.github.io/alex-arcade/retro-arcade/ |
 
 门户首页（双厅入口）：https://alexlifexyz.github.io/alex-arcade/
 
@@ -90,7 +90,7 @@ alex-arcade/
 - **画面缩放**：默认 `exact`（整数倍），`?scale=fit` 可回退非整数倍
 - **输入**：键盘用内核自带 KEY_MAP（网页层不重复绑定），虚拟键和手柄走 `GGEMU_CORE.setButton()`
 - **设计语言**：Bebas Neue + Silkscreen 字体，金 #f0c14b / 粉 #ff4d8d / 青 #38e1ff 霓虹配色，深色 #0b0910 底
-- **首页**：three.js 3D 封面旋转环 + 12 款精选横滑 + 104 款游戏网格（平台 chip 筛选）+ 金币掉落动画
+- **首页**：three.js 3D 封面旋转环 + 12 款精选横滑 + 134 款游戏网格（平台 chip 筛选）+ 金币掉落动画
 
 ### 3.4 游戏数据源
 

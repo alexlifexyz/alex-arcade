@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0b0910">
-<title>像素街机馆 · Pixel Arcade — 104 款经典 FC / GBA / 街机在线玩</title>
-<meta name="description" content="在线重温 104 款经典 FC、GBA、CPS1 街机游戏。即点即玩，支持键盘、虚拟按键与蓝牙手柄。">
+<title>像素街机馆 · Pixel Arcade — 134 款经典 FC / SFC / GBA / 街机在线玩</title>
+<meta name="description" content="在线重温 134 款经典 FC、SFC、GBA、CPS1 街机游戏。即点即玩，支持键盘、虚拟按键与蓝牙手柄。">
 <meta property="og:title" content="像素街机馆 · Pixel Arcade">
-<meta property="og:description" content="104 款经典游戏，浏览器里即点即玩。">
+<meta property="og:description" content="134 款经典游戏，浏览器里即点即玩。">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕹️</text></svg>">
 <style>
   :root {
@@ -213,7 +213,7 @@
 
 <header>
   <div class="wrap hdr">
-    <a class="logo" href="./"><span class="coin">🕹️</span><b>PIXEL ARCADE</b><span class="pix">104 GAMES</span></a>
+    <a class="logo" href="./"><span class="coin">🕹️</span><b>PIXEL ARCADE</b><span class="pix">134 GAMES</span></a>
     <nav>
       <a href="#featured">精选</a>
       <a href="#library">游戏库</a>
@@ -221,7 +221,7 @@
       <a href="arcade.html">工作台</a>
     </nav>
     <div class="hdr-r">
-      <span class="pill star" title="游戏总数"><svg viewBox="0 0 20 20"><path fill="currentColor" d="M10 1.5l2.6 5.5 6 .8-4.4 4.1 1.1 6-5.3-2.9-5.3 2.9 1.1-6L1.4 7.8l6-.8z"/></svg><span id="gamePill">104</span></span>
+      <span class="pill star" title="游戏总数"><svg viewBox="0 0 20 20"><path fill="currentColor" d="M10 1.5l2.6 5.5 6 .8-4.4 4.1 1.1 6-5.3-2.9-5.3 2.9 1.1-6L1.4 7.8l6-.8z"/></svg><span id="gamePill">134</span></span>
       <button class="pill mute" id="mute" type="button"></button>
     </div>
   </div>
@@ -233,14 +233,14 @@
     <div>
       <div class="kicker"><i></i>PIXEL ARCADE · 像素街机馆</div>
       <h1>重温像素<br><span>黄金</span><span class="cy">年代</span></h1>
-      <p class="lead">无需下载，打开就能玩。收录 <b>FC / NES</b>、<b>GBA</b>、<b>CPS1 街机</b> 等 <b>104</b> 款经典，支持键盘、虚拟按键与蓝牙手柄。</p>
+      <p class="lead">无需下载，打开就能玩。收录 <b>FC / NES</b>、<b>SFC</b>、<b>GBA</b>、<b>CPS1 街机</b> 等 <b>134</b> 款经典，支持键盘、虚拟按键与蓝牙手柄。</p>
       <div class="cta">
         <a class="btn primary" id="ctaMain" href="play.html"><span class="coin-sm">🪙</span><span id="ctaText">投币开玩</span></a>
         <button class="btn" id="ctaRandom" type="button">🎲 随机来一台</button>
       </div>
       <div class="stats">
-        <div><b class="gold" id="sGames">104</b><span>款游戏</span></div>
-        <div><b class="cy">6</b><span>大平台</span></div>
+        <div><b class="gold" id="sGames">134</b><span>款游戏</span></div>
+        <div><b class="cy">7</b><span>大平台</span></div>
         <div><b class="pk">0</b><span>安装 · 免登录</span></div>
       </div>
     </div>
@@ -256,7 +256,7 @@
 
 <main class="wrap">
   <section class="block" id="featured">
-    <div class="sh"><h2><em>FEATURED</em>精选推荐</h2><p>从 104 款里挑出的必玩经典。</p></div>
+    <div class="sh"><h2><em>FEATURED</em>精选推荐</h2><p>从 134 款里挑出的必玩经典。</p></div>
     <div class="rail" id="rail"></div>
   </section>
 
@@ -300,6 +300,7 @@
   // 平台归类
   function family(g) {
     var p = (g.platform || "").toUpperCase();
+    if (p.indexOf("SFC") >= 0 || p.indexOf("SNES") >= 0) return "SFC";
     if (p.indexOf("NES") >= 0 || p.indexOf("FC") >= 0) return "FC / NES";
     if (p.indexOf("GBA") >= 0) return "GBA";
     if (p.indexOf("CPS") >= 0) return "CPS1";
@@ -309,7 +310,7 @@
     return "其他";
   }
   var FCOLOR = {
-    "FC / NES": "#38e1ff", "GBA": "#f0c14b", "CPS1": "#ff4d8d",
+    "FC / NES": "#38e1ff", "SFC": "#c4b5fd", "GBA": "#f0c14b", "CPS1": "#ff4d8d",
     "GBC": "#57f5a8", "NGPC": "#b388ff", "GB": "#8be9fd", "其他": "#a79f93"
   };
   function coverOf(g) { return "tools/" + g.id + "/cover.png"; }
@@ -378,7 +379,7 @@
   var cat = "全部", kw = "";
   var counts = {};
   GAMES.forEach(function (g) { var f = family(g); counts[f] = (counts[f] || 0) + 1; });
-  var order = ["全部", "FC / NES", "GBA", "CPS1", "GBC", "NGPC", "GB"];
+  var order = ["全部", "FC / NES", "SFC", "GBA", "CPS1", "GBC", "NGPC", "GB"];
   $("chips").innerHTML = order.map(function (f) {
     var n = f === "全部" ? GAMES.length : (counts[f] || 0);
     if (f !== "全部" && !n) return "";

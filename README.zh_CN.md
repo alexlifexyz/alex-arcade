@@ -7,7 +7,7 @@
 > 为 **FoloToy AI Passport** 打造的复古街机与治愈萌宠游戏合集！每款游戏均配备**独立专属页面**与**开机即玩**的单机体验。
 
 - 在线街机大厅直达：[https://alexlifexyz.github.io/alex-arcade/](https://alexlifexyz.github.io/alex-arcade/)
-- 复古模拟器厅（104 款 FC / GBA / CPS1）：[`retro-arcade/`](retro-arcade/)
+- 复古模拟器厅（134 款 FC / SFC / GBA / CPS1）：[`retro-arcade/`](retro-arcade/)
 - 固件与 Release 下载：[https://github.com/alexlifexyz/alex-arcade/releases](https://github.com/alexlifexyz/alex-arcade/releases)
 
 ![Arcade Hall](arcade/assets/hall.jpg)
@@ -44,7 +44,7 @@
 
 新增独立大厅 **[`retro-arcade/`](retro-arcade/)**：
 
-- **104 款经典**：FC / NES、GBA、GBC、NGPC、GB、CPS1 街机。
+- **134 款经典**：FC / NES、SFC、GBA、GBC、NGPC、GB、CPS1 街机。
 - **即点即玩**：纯浏览器运行，无需下载或登录，支持键盘、虚拟按键与蓝牙手柄。
 - **来源**：由 `xhs-minitools` 游戏合集构建的独立静态站点，统一部署在本仓库 `retro-arcade/` 目录。
 

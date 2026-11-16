@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>超级马力欧：水下秘境</title>
+  <link rel="stylesheet" href="./assets/style.css" />
+  <script>
+    window.addEventListener('error', function (e) {
+      console.error('[UNCAUGHT ERROR]', e);
+    });
+    window.addEventListener('unhandledrejection', function (e) {
+      console.error('[UNHANDLED REJECTION]', e);
+    });
+  </script>
+</head>
+<body>
+  <div id="toast" class="toast"></div>
+
+  <!-- 换关遮罩：重建引擎期间先给一次明确反馈，免得点了像没反应 -->
+  <div id="switch-veil" class="switch-veil" style="display: none;">
+    <div class="veil-card">
+      <div class="veil-spin"></div>
+      <div id="switch-veil-text">正在翻阅这一站…</div>
+    </div>
+  </div>
+
+  <!-- 秘境终章 -->
+  <div id="secret-ending" class="secret-ending" style="display: none;">
+    <div class="ending-card">
+      <div class="ending-kicker">WORLD&nbsp;&nbsp;-1&nbsp;&nbsp;/&nbsp;&nbsp;秘境终章</div>
+      <div class="ending-title">你游到了 -1 的尽头</div>
+      <div class="ending-copy">
+        三十多年里，无数人说负一关是一片游不到底的海。<br>
+        你替他们把最后一格游完了。
+      </div>
+      <div class="ending-meta">这一关不属于任何世界，也不通向任何一关。</div>
+      <button id="ending-again" type="button" class="ending-btn primary">再潜一次</button>
+      <button id="ending-original" type="button" class="ending-btn ghost">回到原版 1-1</button>
+      <button id="ending-close" type="button" class="ending-close" aria-label="关闭">×</button>
+    </div>
+  </div>
+
+  <!-- 双层底栏标准布局 (避坑准则第 19、23 条) -->
+  <div id="deck-controls">
+    <!-- 巡游时多出来的一行：与下面两排按键同宽同列，不压在按键上 -->
+    <div id="tour-bar">
+      <button id="tour-prev" type="button">上一关</button>
+      <div id="tour-label">坏世界 9-1</div>
+      <button id="tour-next" type="button">下一关</button>
+      <button id="tour-exit" type="button">退出</button>
+    </div>
+    <!-- 第二层：游戏控制辅助层 (左侧复位，中间攻略，右侧声音) -->
+    <div id="toolbar-sub">
+      <button id="btn-reset" type="button">复位</button>
+      <button id="btn-guide" type="button">攻略</button>
+      <button id="btn-sound" type="button">声音</button>
+    </div>
+    <!-- 第一层：系统工具底栏 (标准4键) -->
+    <div id="toolbar">
+      <button id="btn-save" type="button">存档</button>
+      <button id="btn-fast" type="button">3× 加速</button>
+      <button id="btn-settings" type="button">设置</button>
+      <button id="btn-record" type="button">59s 录屏</button>
+    </div>
+  </div>
+
+  <div id="guide-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">通关笔记与秘境选单</div>
+        <button id="guide-close" class="modal-close-btn" type="button">×</button>
+      </div>
+      <div class="modal-body">
+        <!-- 核心：秘境巡游 + 水下负一关 -->
+        <div class="guide-section author-card" style="background: linear-gradient(135deg, rgba(129,40,200,0.35) 0%, rgba(15,23,42,0.85) 100%); border: 1px solid rgba(192,132,252,0.55); box-shadow: 0 4px 16px rgba(129,40,200,0.28);">
+          <div class="author-info">
+            <div class="author-name" style="color: #d8b4fe; font-size: 16px; font-weight: bold;">秘境巡游 · 坏掉的世界</div>
+            <div class="author-desc" style="color: #cbd5e1; margin-top: 4px; line-height: 1.5;">关卡编号只有一个字节，正常只用到 8 个世界。一旦越过 8，游戏就去表外找数据，于是一路长出 256 个世界、1024 个坏关卡：天空和海水能同时出现，绿水管配橙色砖，整片砖墙变成青色，或者干脆只剩一片紫色。<br>这里把 82 个不同的越界指针全部跑了一遍，挑出真能玩又长得离谱的 21 站，按编号排成一条线。你想看的那种「粉红拼图」在第 13 站（坏世界 O-3）：绿色城堡旁边横着一条洋红平台，天空还有半截残云，一眼就看得出是不同场景硬拼起来的——粉色按钮可以直接跳过去。条上写「第几站 / 共几站」和世界号，两个数字永远对得上。跑不动的（全黑、一进去就掉 Warp Zone）已经剔掉，世界号超过 Z 的也去掉了——状态栏只有一个格子，画不出两位数，留着只会让人以为翻页坏了。</div>
+          </div>
+          <button id="btn-jump-tour" class="btn-follow" type="button" style="background: linear-gradient(135deg, #7c3aed 0%, #4c1d95 100%); color: #ffffff; font-weight: bold; font-size: 15px; padding: 12px 10px; margin-top: 10px; border: 1px solid #a78bfa; box-shadow: 0 4px 12px rgba(124,58,237,0.4); text-align: center;">开始巡游 · 坏世界 C-1</button>
+          <button id="btn-jump-pink" class="btn-follow" type="button" style="background: linear-gradient(135deg, #db2777 0%, #9d174d 100%); color: #ffffff; font-weight: bold; font-size: 15px; padding: 12px 10px; margin-top: 8px; border: 1px solid #f9a8d4; box-shadow: 0 4px 12px rgba(219,39,119,0.4); text-align: center;">直达 · 粉红拼图那面（坏世界 O-3）</button>
+          <button id="btn-jump-minus1" class="btn-follow" type="button" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff; font-weight: bold; margin-top: 8px; text-align: center;">重潜水下负一关 · WORLD -1</button>
+          <button id="btn-jump-world1" class="btn-follow" type="button" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; font-weight: bold; margin-top: 8px; text-align: center;">重玩原版 · 1-1 经典平原</button>
+        </div>
+
+        <div class="guide-section">
+          <div class="section-title">巡游手册</div>
+          <div class="guide-item">
+            <span class="guide-tag purple">翻页</span>
+            <span class="guide-desc">画面下方会出现「上一关 / 下一关」，一关一关翻。条上写着「第几站 / 共几站」，世界号就是状态栏那个格子里的字符。翻到头会提示，不会跳回开头。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag blue">跳过</span>
+            <span class="guide-desc">列表里只留了能跑的 21 站；万一某站还是黑屏，进去一秒后会自己往后跳，最多连跳八面。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag gold">负一关</span>
+            <span class="guide-desc">巡游翻到 36 号世界时会路过真正的水下段，那就是大家说的水下负一关，也可以从上面蓝色按钮直接进。</span>
+          </div>
+        </div>
+
+        <div class="guide-section">
+          <div class="section-title">秘境潜行手册</div>
+          <div class="guide-item">
+            <span class="guide-tag blue">水下</span>
+            <span class="guide-desc">这是原版水下关的数据本身：海水是关卡配色，珊瑚是地形砖，乌贼和鱼是原版敌人，没有叠滤镜。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag green">游泳</span>
+            <span class="guide-desc">方向键左右游，A 往上游，松手会慢慢下沉，B 可以游得更快。撞到珊瑚要早点抬起来。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag gold">终点</span>
+            <span class="guide-desc">游到最右边的出口水管，会进入「秘境终章」。原版这里会把你送回起点，永远出不去。</span>
+          </div>
+        </div>
+
+        <div class="guide-section author-card">
+          <div class="author-info">
+            <div class="author-name">Alex 游戏百宝箱</div>
+            <div class="author-desc">先按原版玩。想换一种走法，关注后再打开。</div>
+          </div>
+          <button id="btn-guide-on" class="btn-follow" type="button">关注后，换成笔记走法</button>
+          <button id="btn-guide-off" class="btn-follow" type="button" style="margin-top:8px;background:#2a2a30;">按原版来</button>
+        </div>
+
+        <div class="guide-section">
+          <div class="section-title">笔记里的走法</div>
+          <div class="guide-item">
+            <span class="guide-tag gold">星星</span>
+            <span class="guide-desc">掉进坑里还能回到这一关，多试几次也不至于结束。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag red">火焰花</span>
+            <span class="guide-desc">变成能吐火球的样子。按住 B 奔跑，再按一下就丢出去。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag purple">轻跳</span>
+            <span class="guide-desc">按住 A 会飘得高一点，点一下仍是小跳。先按住 B 再按 A，就是跑着跳。</span>
+          </div>
+        </div>
+
+        <div class="guide-section">
+          <div class="section-title">原版里本来就有的路</div>
+          <div class="guide-item">
+            <span class="guide-tag blue">天花板</span>
+            <span class="guide-desc">1-2 关底踩上升梯，跳上天花板一直往右，能进到隐藏水管；把砖打剩一块贴墙蹲跳，就是当年掉进 -1 的那条缝。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag green">接着上一关</span>
+            <span class="guide-desc">回到标题后，按住 A 不放再按开始，会从刚才的世界接着走。</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="main-canvas"></canvas>
+
+  <script src="./assets/lzstring.js"></script>
+  <script src="./assets/nes.min.js"></script>
+  <script src="./assets/config.js"></script>
+  <script src="./assets/rom.js"></script>
+  <script src="./assets/core.js"></script>
+  <script src="./assets/skin.js"></script>
+  <script src="./assets/shell.js"></script>
+</body>
+</html>

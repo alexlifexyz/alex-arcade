@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>脱狱</title>
+  <link rel="stylesheet" href="./assets/style.css" />
+  <script>
+    window.addEventListener('error', function(e) {
+      console.error('[UNCAUGHT ERROR]', e);
+      var msg = (e && e.message) ? e.message : String(e);
+      var box = document.getElementById('debug-err');
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'debug-err';
+        box.style.cssText = 'position:fixed;top:10px;left:10px;right:10px;background:rgba(200,0,0,0.9);color:#fff;padding:12px;border-radius:8px;font-size:12px;z-index:99999;word-break:break-all;';
+        document.body.appendChild(box);
+      }
+      box.textContent = '运行异常: ' + msg;
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      console.error('[UNHANDLED REJECTION]', e);
+    });
+  </script>
+</head>
+<body>
+  <div id="toast" class="toast"></div>
+
+  <!-- 通关笔记与战术指引弹窗 -->
+  <div id="guide-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">通关笔记</div>
+        <button id="guide-close" class="modal-close-btn" type="button">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="guide-section author-card">
+          <div class="author-info">
+            <div class="author-name">Alex 游戏百宝箱</div>
+            <div class="author-desc">先按原版玩。想换一种走法，关注后再打开。</div>
+          </div>
+          <button id="btn-guide-on" class="btn-follow" type="button">关注后，换成笔记走法</button>
+          <button id="btn-guide-off" class="btn-follow" type="button" style="margin-top:8px;background:#2a2a30;">按原版来</button>
+        </div>
+        <div class="guide-section">
+          <div class="section-title">笔记里的硬派走法</div>
+          <div class="guide-item">
+            <span class="guide-tag gold">战俘整备</span>
+            <span class="guide-desc">特战总部随时空投后援，保持 21 次突击作战机会，牢房破门后无所畏惧。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag red">充沛体力</span>
+            <span class="guide-desc">始终保持 32 格满负荷作战体能，硬抗敌兵拳脚、匕首与流弹夹击。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag purple">军用弹药</span>
+            <span class="guide-desc">夺取冲锋枪后弹药源源不断，全速扫射压制敌方阵线。</span>
+          </div>
+        </div>
+        <div class="guide-section">
+          <div class="section-title">原版硬核通关秘诀</div>
+          <div class="guide-item">
+            <span class="guide-tag blue">飞踢破阵</span>
+            <span class="guide-desc">被前后巡逻兵包夹时，直接按专属跳跃键（X / Y）或两键同按（A+B）施展回旋跳踢，大范围震飞两侧敌兵。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag green">夺取匕首</span>
+            <span class="guide-desc">击倒持军用匕首的敌兵后，靠近按拳击键拾取，出刀速度极快且威力巨大。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag gold">潜入建筑</span>
+            <span class="guide-desc">沿途留意标有雷达或弹药箱的铁门，走入隐藏仓库可获得高爆手雷或急救补给。</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部服务检修控制面板 (标准双层控制面板) -->
+  <div id="deck-controls">
+    <!-- 第二层：游戏控制辅助层 (左侧复位，中间攻略，右侧声音，工整对称) -->
+    <div id="toolbar-sub">
+      <button id="btn-reset" type="button">复位</button>
+      <button id="btn-guide" type="button">攻略</button>
+      <button id="btn-sound" type="button">声音</button>
+    </div>
+    <!-- 第一层：系统工具底栏 (标准4键) -->
+    <div id="toolbar">
+      <button id="btn-save" type="button">存档</button>
+      <button id="btn-fast" type="button">3× 加速</button>
+      <button id="btn-settings" type="button">设置</button>
+      <button id="btn-record" type="button">59s 录屏</button>
+    </div>
+  </div>
+
+  <!-- 掌机主渲染画布 -->
+  <canvas id="main-canvas"></canvas>
+
+  <!-- 引入依赖脚本 (严格按序外置加载，严禁 type=module) -->
+  <script src="./assets/config.js"></script>
+  <script src="./assets/xhs-bridge.js"></script>
+  <script src="./assets/nes.min.js"></script>
+  <script src="./assets/rom.js"></script>
+  <script src="./assets/core.js"></script>
+  <script src="./assets/skin.js"></script>
+  <script src="./assets/shell.js"></script>
+</body>
+</html>

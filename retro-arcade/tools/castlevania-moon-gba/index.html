@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>恶魔城月轮</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script>
+    // 真机全局异常捕获监控，防止任何静默黑屏
+    window.addEventListener('error', function(e) {
+      console.error('[UNCAUGHT ERROR]', e);
+      var msg = (e && e.message) ? e.message : String(e);
+      var box = document.getElementById('debug-err');
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'debug-err';
+        box.style.cssText = 'position:fixed;top:10px;left:10px;right:10px;background:rgba(200,0,0,0.9);color:#fff;padding:12px;border-radius:8px;font-size:12px;z-index:99999;word-break:break-all;';
+        document.body.appendChild(box);
+      }
+      box.textContent = '运行异常: ' + msg;
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      console.error('[UNHANDLED REJECTION]', e);
+    });
+  </script>
+</head>
+<body>
+  <div id="toast" class="toast"></div>
+
+  <!-- 攻略笔记弹窗 (游戏内正统机制写法，符合避坑规范) -->
+  <div id="guide-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">月轮古堡探索指南</div>
+        <button id="guide-close" class="modal-close-btn" type="button">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="guide-section author-card">
+          <div class="author-info">
+            <div class="author-name">Alex 游戏百宝箱</div>
+            <div class="author-desc">默认原汁原味机台难度。内森可获得月神护佑与全卡片刻印，畅快探索暗黑古堡。</div>
+          </div>
+          <button id="btn-guide-on" class="btn-follow" type="button">关注作者 获得月神护佑与卡片刻印</button>
+          <button id="btn-guide-off" class="btn-follow" type="button" style="margin-top:8px;background:#2a2a30;">恢复原版机台难度</button>
+        </div>
+        <div class="guide-section">
+          <div class="section-title">DSS配方指南</div>
+          <div class="guide-item">
+            <span class="guide-tag gold">全卡片刻印</span>
+            <span class="guide-desc">解锁全部十神与属性卡，按 R 键随时觉醒神明与魔兽双卡刻印。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag red">火星炎鞭</span>
+            <span class="guide-desc">Mars卡片与火属性组合，挥出烈焰长鞭，击溃前方大范围暗黑怪物。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag green">月神护佑</span>
+            <span class="guide-desc">受到月神持续守护，保持充盈生命与魔法状态，稳健探索恶魔城深处。</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部服务检修控制面板 (双层控制面板) -->
+  <div id="deck-controls">
+    <!-- 第二层：游戏控制辅助层 (左侧复位，中间攻略，右侧声音) -->
+    <div id="toolbar-sub">
+      <button id="btn-reset" type="button">复位</button>
+      <button id="btn-guide" type="button">攻略</button>
+      <button id="btn-sound" type="button">声音</button>
+    </div>
+    <!-- 第一层：系统工具底栏 (标准4键) -->
+    <div id="toolbar">
+      <button id="btn-save" type="button">存档</button>
+      <button id="btn-fast" type="button">3× 加速</button>
+      <button id="btn-settings" type="button">设置</button>
+      <button id="btn-record" type="button">59s 录屏</button>
+    </div>
+  </div>
+
+  <!-- 掌机主渲染画布 -->
+  <canvas id="main-canvas"></canvas>
+
+  <!-- GBA 核心离屏输出画布 (240x160) -->
+  <div id="core-host" style="display:none;">
+    <canvas id="screen" width="240" height="160"></canvas>
+  </div>
+
+  <!-- 引入依赖脚本 (严格按序外置加载，严禁 type=module) -->
+  <script src="assets/config.js"></script>
+  <script src="assets/xhs-bridge.js"></script>
+  <script src="assets/lzstring.js"></script>
+  <script src="assets/gba.min.js"></script>
+  <script src="assets/rom.js"></script>
+  <script src="assets/core.js"></script>
+  <script src="assets/skin.js"></script>
+  <script src="assets/shell.js"></script>
+</body>
+</html>

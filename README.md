@@ -6,7 +6,7 @@
 
 > A vibrant collection of retro arcade classics and delightful pet runner games built for **FoloToy AI Passport**! Every game features a **dedicated landing page** and clean 3-button arcade controls.
 >
-> 🕹️ **New:** [Retro Arcade Hall](retro-arcade/) — 104 classic FC / NES, GBA and CPS1 titles running directly in the browser.
+> 🕹️ **New:** [Retro Arcade Hall](retro-arcade/) — 134 classic FC / NES, SFC, GBA and CPS1 titles running directly in the browser.
 
 ![Arcade Hall](arcade/assets/hall.jpg)
 
@@ -42,7 +42,7 @@ Every game has its own dedicated directory and page. Share any link below direct
 
 Visit **[`retro-arcade/`](retro-arcade/)** for a second hall dedicated to classic emulators:
 
-- **104 titles**: FC / NES, GBA, GBC, NGPC, GB and CPS1 arcade.
+- **134 titles**: FC / NES, SFC, GBA, GBC, NGPC, GB and CPS1 arcade.
 - **No install**: browser-only, keyboard / virtual keys / gamepad support.
 - **Shared assets**: built from the `xhs-minitools` collection and synced as a self-contained static site under `retro-arcade/`.
 

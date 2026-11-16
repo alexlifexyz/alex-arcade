@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>超级马力欧：失落第九关</title>
+  <link rel="stylesheet" href="./assets/style.css" />
+  <script>
+    window.addEventListener('error', function (e) {
+      console.error('[UNCAUGHT ERROR]', e);
+    });
+    window.addEventListener('unhandledrejection', function (e) {
+      console.error('[UNHANDLED REJECTION]', e);
+    });
+  </script>
+</head>
+<body>
+  <!-- 全局 Toast 提示 -->
+  <div id="toast" class="toast"></div>
+
+  <!-- 双层底栏标准布局 (避坑准则第 19、23 条) -->
+  <div id="deck-controls">
+    <!-- 第二层：游戏控制辅助层 (左侧复位，中间攻略，右侧声音) -->
+    <div id="toolbar-sub">
+      <button id="btn-reset" type="button">复位</button>
+      <button id="btn-guide" type="button">攻略</button>
+      <button id="btn-sound" type="button">声音</button>
+    </div>
+    <!-- 第一层：系统工具底栏 (标准4键) -->
+    <div id="toolbar">
+      <button id="btn-save" type="button">存档</button>
+      <button id="btn-fast" type="button">3× 加速</button>
+      <button id="btn-settings" type="button">设置</button>
+      <button id="btn-record" type="button">59s 录屏</button>
+    </div>
+  </div>
+
+  <div id="guide-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">通关笔记与第九世界</div>
+        <button id="guide-close" class="modal-close-btn" type="button">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="guide-section author-card" style="background: linear-gradient(135deg, rgba(234,88,12,0.25) 0%, rgba(88,28,135,0.4) 100%); border: 1px solid rgba(251,146,60,0.4);">
+          <div class="author-info">
+            <div class="author-name" style="color: #fb923c;">任天堂官方正统・第九世界全关卡</div>
+            <div class="author-desc">已解锁官方 9-1 至 9-4 全小关！已破解原版 9-1 原地循环，支持通关自动推进。</div>
+          </div>
+          <button id="btn-jump-world9-1" class="btn-follow" type="button" style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: #ffffff; font-weight: bold; margin-top: 6px;">开启 9-1：奇幻水下平原漫游</button>
+          <button id="btn-jump-world9-2" class="btn-follow" type="button" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff; font-weight: bold; margin-top: 6px;">开启 9-2：深海水下大探索</button>
+          <button id="btn-jump-world9-3" class="btn-follow" type="button" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: #ffffff; font-weight: bold; margin-top: 6px;">开启 9-3：奇幻悬崖跳跃</button>
+          <button id="btn-jump-world9-4" class="btn-follow" type="button" style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: #ffffff; font-weight: bold; margin-top: 6px;">开启 9-4：水下最终决战城堡</button>
+        </div>
+
+        <div class="guide-section author-card">
+          <div class="author-info">
+            <div class="author-name">Alex 游戏百宝箱</div>
+            <div class="author-desc">官方高难经典。若觉得关卡难度过大，可换成神秘绿蘑菇常驻加护。</div>
+          </div>
+          <button id="btn-guard-on" class="btn-follow" type="button">开启绿蘑菇常驻加护</button>
+          <button id="btn-guard-off" class="btn-follow" type="button" style="margin-top:8px;background:#2a2a30;">按原版来</button>
+        </div>
+
+        <div class="guide-section">
+          <div class="section-title">第九世界特色</div>
+          <div class="guide-item">
+            <span class="guide-tag gold">水下平原</span>
+            <span class="guide-desc">9-1 展现粉红霞光天空与陆地贴图，全场拥有完整水下浮力机制。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag blue">深海探索</span>
+            <span class="guide-desc">9-2 与 9-4 为真正的深海水下与水下城堡，挑战库巴。</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="main-canvas"></canvas>
+
+  <script src="./assets/lzstring.js"></script>
+  <script src="./assets/nes.min.js"></script>
+  <script src="./assets/config.js"></script>
+  <script src="./assets/rom.js"></script>
+  <script src="./assets/core.js"></script>
+  <script src="./assets/skin.js"></script>
+  <script src="./assets/shell.js"></script>
+</body>
+</html>

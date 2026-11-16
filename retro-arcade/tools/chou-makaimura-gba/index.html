@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>超魔界村 R</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script>
+    // 真机全局异常捕获监控，防止任何静默黑屏
+    window.addEventListener('error', function(e) {
+      console.error('[UNCAUGHT ERROR]', e);
+      var msg = (e && e.message) ? e.message : String(e);
+      var box = document.getElementById('debug-err');
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'debug-err';
+        box.style.cssText = 'position:fixed;top:10px;left:10px;right:10px;background:rgba(200,0,0,0.9);color:#fff;padding:12px;border-radius:8px;font-size:12px;z-index:99999;word-break:break-all;';
+        document.body.appendChild(box);
+      }
+      box.textContent = '运行异常: ' + msg;
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      console.error('[UNHANDLED REJECTION]', e);
+    });
+  </script>
+</head>
+<body>
+  <div id="toast" class="toast"></div>
+
+  <!-- 攻略笔记弹窗 (纯净原版机制写法，符合避坑规范) -->
+  <div id="guide-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">亚瑟魔界通关指南</div>
+        <button id="guide-close" class="modal-close-btn" type="button">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="guide-section author-card">
+          <div class="author-info">
+            <div class="author-name">Alex 游戏百宝箱</div>
+            <div class="author-desc">默认原汁原味机台难度。开启黄金铠甲加护，重温经典通关。</div>
+          </div>
+          <button id="btn-guide-on" class="btn-follow" type="button">关注作者 获得黄金铠甲加护</button>
+          <button id="btn-guide-off" class="btn-follow" type="button" style="margin-top:8px;background:#2a2a30;">恢复原版难度</button>
+        </div>
+        <div class="guide-section">
+          <div class="section-title">原版核心战斗技巧</div>
+          <div class="guide-item">
+            <span class="guide-tag gold">二段跳跃</span>
+            <span class="guide-desc">起跳后再按一次 A 键可在空中二段腾空，空中无法变向，需提前预判落点。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag red">黄金铠甲</span>
+            <span class="guide-desc">宝箱升级青铜铠甲后再得黄金铠甲，蓄力投掷可施放全屏强力属性魔法。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag green">圣光守护</span>
+            <span class="guide-desc">身披黄金铠甲时附带月光神盾，可防御抵消来自正面的部分远程投掷攻击。</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部服务检修控制面板 (双层控制面板) -->
+  <div id="deck-controls">
+    <!-- 第二层：游戏控制辅助层 (左侧复位，中间攻略，右侧声音) -->
+    <div id="toolbar-sub">
+      <button id="btn-reset" type="button">复位</button>
+      <button id="btn-guide" type="button">攻略</button>
+      <button id="btn-sound" type="button">声音</button>
+    </div>
+    <!-- 第一层：系统工具底栏 (标准4键) -->
+    <div id="toolbar">
+      <button id="btn-save" type="button">存档</button>
+      <button id="btn-fast" type="button">3× 加速</button>
+      <button id="btn-settings" type="button">设置</button>
+      <button id="btn-record" type="button">59s 录屏</button>
+    </div>
+  </div>
+
+  <!-- 掌机主渲染画布 -->
+  <canvas id="main-canvas"></canvas>
+
+  <!-- GBA 核心离屏输出画布 (240x160) -->
+  <div id="core-host" style="display:none;">
+    <canvas id="screen" width="240" height="160"></canvas>
+  </div>
+
+  <!-- 引入依赖脚本 (严格按序外置加载，严禁 type=module) -->
+  <script src="assets/config.js"></script>
+  <script src="assets/xhs-bridge.js"></script>
+  <script src="assets/lzstring.js"></script>
+  <script src="assets/gba.min.js"></script>
+  <script src="assets/rom.js"></script>
+  <script src="assets/core.js"></script>
+  <script src="assets/skin.js"></script>
+  <script src="assets/shell.js"></script>
+</body>
+</html>

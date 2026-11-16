@@ -1,7 +1,7 @@
 // shared/web/games.js
 // 网页播放器游戏清单：由 shared/web/sync_games.py 扫描 tools/ 自动生成，请勿手工编辑。
 // 判据：tools/<id>/ 同时有 index.html 与 assets/core.js；新增或删除工程后重新运行同步脚本。
-// 共 104 款。
+// 共 134 款。
 window.WEB_GAMES = [
   {
     "id": "3wonders-cps1",
@@ -39,6 +39,13 @@ window.WEB_GAMES = [
     "desc": "阿拉丁神灯 · FC/NES"
   },
   {
+    "id": "bawang-nes",
+    "title": "三国志2：霸王的大陆 中文版",
+    "platform": "FC/NES",
+    "category": "console",
+    "desc": "三国志2：霸王的大陆 中文版 · FC/NES"
+  },
+  {
     "id": "bomberman-nes",
     "title": "炸弹人",
     "platform": "FC/NES",
@@ -74,6 +81,13 @@ window.WEB_GAMES = [
     "desc": "晓月圆舞曲 · GBA"
   },
   {
+    "id": "castlevania-moon-gba",
+    "title": "恶魔城月轮",
+    "platform": "GBA",
+    "category": "handheld",
+    "desc": "恶魔城月轮 · GBA"
+  },
+  {
     "id": "castlevania-nes",
     "title": "恶魔城",
     "platform": "FC/NES",
@@ -95,11 +109,39 @@ window.WEB_GAMES = [
     "desc": "松鼠大作战2 · FC/NES"
   },
   {
+    "id": "chobits-gba",
+    "title": "电脑天使心 中文版",
+    "platform": "GBA",
+    "category": "handheld",
+    "desc": "电脑天使心 中文版 · GBA"
+  },
+  {
+    "id": "chou-makaimura-gba",
+    "title": "超魔界村 R",
+    "platform": "GBA",
+    "category": "handheld",
+    "desc": "超魔界村 R · GBA"
+  },
+  {
     "id": "circus-nes",
     "title": "经典马戏团 1984",
     "platform": "FC/NES",
     "category": "console",
     "desc": "经典马戏团 1984 · FC/NES"
+  },
+  {
+    "id": "conan-akatsuki-gba",
+    "title": "名侦探柯南 黎明之碑",
+    "platform": "GBA",
+    "category": "handheld",
+    "desc": "名侦探柯南 黎明之碑 · GBA"
+  },
+  {
+    "id": "conan-sniper-gba",
+    "title": "名侦探柯南 迷雾侦探",
+    "platform": "GBA",
+    "category": "handheld",
+    "desc": "名侦探柯南 迷雾侦探 · GBA"
   },
   {
     "id": "contra-advance-gba",
@@ -114,6 +156,13 @@ window.WEB_GAMES = [
     "platform": "FC/NES",
     "category": "console",
     "desc": "魂斗罗初代 1988 · FC/NES"
+  },
+  {
+    "id": "crossfire-nes",
+    "title": "脱狱2：血火纵横",
+    "platform": "FC/NES",
+    "category": "console",
+    "desc": "脱狱2：血火纵横 · FC/NES"
   },
   {
     "id": "dd1-nes",
@@ -135,6 +184,13 @@ window.WEB_GAMES = [
     "platform": "FC/NES",
     "category": "console",
     "desc": "双截龙 III · FC/NES"
+  },
+  {
+    "id": "deadfox-nes",
+    "title": "人间兵器",
+    "platform": "FC/NES",
+    "category": "console",
+    "desc": "人间兵器 · FC/NES"
   },
   {
     "id": "dino-cps1",
@@ -165,6 +221,13 @@ window.WEB_GAMES = [
     "desc": "马里奥医生 · FC/NES"
   },
   {
+    "id": "dragonball-bukuto-gba",
+    "title": "龙珠 舞空斗剧",
+    "platform": "GBA",
+    "category": "handheld",
+    "desc": "龙珠 舞空斗剧 · GBA"
+  },
+  {
     "id": "dragonball-gba",
     "title": "龙珠大冒险 GBA经典版",
     "platform": "GBA",
@@ -184,6 +247,13 @@ window.WEB_GAMES = [
     "platform": "GBA",
     "category": "handheld",
     "desc": "烈火之剑 · GBA"
+  },
+  {
+    "id": "fire-emblem-gaiden-nes",
+    "title": "圣火徽章外传：索菲亚复兴 中文版",
+    "platform": "FC/NES",
+    "category": "console",
+    "desc": "圣火徽章外传：索菲亚复兴 中文版 · FC/NES"
   },
   {
     "id": "fire-emblem-gba",
@@ -242,6 +312,13 @@ window.WEB_GAMES = [
     "desc": "逆转裁判3 · GBA"
   },
   {
+    "id": "harry-potter-gba",
+    "title": "哈利波特与密室 中文版",
+    "platform": "GBA",
+    "category": "handheld",
+    "desc": "哈利波特与密室 中文版 · GBA"
+  },
+  {
     "id": "harvest-moon-gba",
     "title": "牧场物语：矿石镇的伙伴们 中文版",
     "platform": "GBA",
@@ -254,6 +331,13 @@ window.WEB_GAMES = [
     "platform": "GBA",
     "category": "handheld",
     "desc": "牧场物语：矿石镇女孩篇 中文版 · GBA"
+  },
+  {
+    "id": "hikaru-no-go-gba",
+    "title": "棋魂黑白对弈 中文版",
+    "platform": "GBA",
+    "category": "handheld",
+    "desc": "棋魂黑白对弈 中文版 · GBA"
   },
   {
     "id": "hook-cps1",
@@ -410,6 +494,13 @@ window.WEB_GAMES = [
     "desc": "超级马里奥兄弟初代 1985 · FC/NES"
   },
   {
+    "id": "mario-secret-nes",
+    "title": "超级马力欧：水下秘境",
+    "platform": "FC/NES",
+    "category": "console",
+    "desc": "超级马力欧：水下秘境 · FC/NES"
+  },
+  {
     "id": "mario-vs-donkey-kong-gba",
     "title": "马里奥对大金刚",
     "platform": "GBA",
@@ -422,6 +513,13 @@ window.WEB_GAMES = [
     "platform": "GBA",
     "category": "handheld",
     "desc": "超级马里奥世界 GBA · GBA"
+  },
+  {
+    "id": "mario2-lost9-nes",
+    "title": "超级马力欧：失落第九关",
+    "platform": "FC/NES",
+    "category": "console",
+    "desc": "超级马力欧：失落第九关 · FC/NES"
   },
   {
     "id": "mario2-nes",
@@ -488,10 +586,10 @@ window.WEB_GAMES = [
   },
   {
     "id": "mslug1st-ngpc",
-    "title": "合金弹头第一任务",
+    "title": "合金弹头特种任务",
     "platform": "NGPC",
     "category": "handheld",
-    "desc": "合金弹头第一任务 · NGPC"
+    "desc": "合金弹头特种任务 · NGPC"
   },
   {
     "id": "mslug2nd-ngpc",
@@ -499,6 +597,20 @@ window.WEB_GAMES = [
     "platform": "NGPC",
     "category": "handheld",
     "desc": "合金弹头：第二任务 · NGPC"
+  },
+  {
+    "id": "naruto-konoha-senki-gba",
+    "title": "火影忍者 木叶战记",
+    "platform": "GBA",
+    "category": "handheld",
+    "desc": "火影忍者 木叶战记 · GBA"
+  },
+  {
+    "id": "naruto-ninja-council-gba",
+    "title": "火影忍者：最强忍者大集结 中文版",
+    "platform": "GBA",
+    "category": "handheld",
+    "desc": "火影忍者：最强忍者大集结 中文版 · GBA"
   },
   {
     "id": "nekketsu-dodgeball-nes",
@@ -557,11 +669,46 @@ window.WEB_GAMES = [
     "desc": "宝可梦：火红 中文版 · GBA"
   },
   {
+    "id": "pokemon-leafgreen-gba",
+    "title": "宝可梦：叶绿 中文版",
+    "platform": "GBA",
+    "category": "handheld",
+    "desc": "宝可梦：叶绿 中文版 · GBA"
+  },
+  {
+    "id": "pokemon-waterblue-gba",
+    "title": "宝可梦水银",
+    "platform": "GBA",
+    "category": "handheld",
+    "desc": "宝可梦水银 · GBA"
+  },
+  {
     "id": "pokemon-yellow-gbc",
     "title": "宝可梦：黄 (皮卡丘特别版)",
     "platform": "GBC",
     "category": "handheld",
     "desc": "宝可梦：黄 (皮卡丘特别版) · GBC"
+  },
+  {
+    "id": "pow-nes",
+    "title": "脱狱",
+    "platform": "FC/NES",
+    "category": "console",
+    "desc": "脱狱 · FC/NES"
+  },
+  {
+    "id": "prince-of-tennis-2003-fire-gba",
+    "title": "网球王子2003火红",
+    "platform": "GBA",
+    "category": "handheld",
+    "desc": "网球王子2003火红 · GBA"
+  },
+  {
+    "id": "prince-of-tennis-genius-gba",
+    "title": "网球王子天才少年",
+    "platform": "GBA",
+    "category": "handheld",
+    "desc": "网球王子天才少年 · GBA"
   },
   {
     "id": "punisher-cps1",
@@ -599,11 +746,39 @@ window.WEB_GAMES = [
     "desc": "沙罗曼蛇 · FC/NES"
   },
   {
+    "id": "sanguo3-sfc",
+    "title": "三国志3 中文版",
+    "platform": "SFC",
+    "category": "console",
+    "desc": "三国志3 中文版 · SFC"
+  },
+  {
+    "id": "sennen-kazoku-gba",
+    "title": "千年家族",
+    "platform": "GBA",
+    "category": "handheld",
+    "desc": "千年家族 · GBA"
+  },
+  {
     "id": "sf2ce-cps1",
     "title": "街头霸王四大天王",
     "platform": "CPS1 街机",
     "category": "arcade",
     "desc": "街头霸王四大天王 · CPS1 街机"
+  },
+  {
+    "id": "shining-soul-2-gba",
+    "title": "光明之魂2 经典中文版",
+    "platform": "GBA",
+    "category": "handheld",
+    "desc": "光明之魂2 经典中文版 · GBA"
+  },
+  {
+    "id": "shining-soul2-gba",
+    "title": "光明之魂2",
+    "platform": "GBA",
+    "category": "handheld",
+    "desc": "光明之魂2 · GBA"
   },
   {
     "id": "smb-deluxe-gbc",
@@ -620,6 +795,13 @@ window.WEB_GAMES = [
     "desc": "雪人兄弟 · FC/NES"
   },
   {
+    "id": "spiderman-battle-for-ny-gba",
+    "title": "蜘蛛侠 纽约之战",
+    "platform": "GBA",
+    "category": "handheld",
+    "desc": "蜘蛛侠 纽约之战 · GBA"
+  },
+  {
     "id": "spiderman-gba",
     "title": "蜘蛛侠GBA动作巅峰",
     "platform": "GBA",
@@ -628,10 +810,10 @@ window.WEB_GAMES = [
   },
   {
     "id": "spiderman-nes",
-    "title": "蜘蛛侠：邪恶六人组的归来",
+    "title": "蜘蛛侠：邪恶六人组",
     "platform": "FC/NES",
     "category": "console",
-    "desc": "蜘蛛侠：邪恶六人组的归来 · FC/NES"
+    "desc": "蜘蛛侠：邪恶六人组 · FC/NES"
   },
   {
     "id": "srw-og-gba",
@@ -655,6 +837,13 @@ window.WEB_GAMES = [
     "desc": "坦克大战 1990 · FC/NES"
   },
   {
+    "id": "tenchi1-nes",
+    "title": "吞食天地：三国外传 中文版",
+    "platform": "FC/NES",
+    "category": "console",
+    "desc": "吞食天地：三国外传 中文版 · FC/NES"
+  },
+  {
     "id": "tenchi2-nes",
     "title": "吞食天地2：诸葛孔明传 中文版",
     "platform": "FC/NES",
@@ -676,11 +865,32 @@ window.WEB_GAMES = [
     "desc": "激龟快打 · FC/NES"
   },
   {
+    "id": "tmnt2-nes",
+    "title": "忍者神龟 2：街机版 1990",
+    "platform": "FC/NES",
+    "category": "console",
+    "desc": "忍者神龟 2：街机版 1990 · FC/NES"
+  },
+  {
     "id": "tmnt3-nes",
     "title": "忍者神龟3：曼哈顿计划",
     "platform": "FC/NES",
     "category": "console",
     "desc": "忍者神龟3：曼哈顿计划 · FC/NES"
+  },
+  {
+    "id": "ultraman-keibitai-gba",
+    "title": "奥特曼警备队",
+    "platform": "GBA",
+    "category": "handheld",
+    "desc": "奥特曼警备队 · GBA"
+  },
+  {
+    "id": "ultraman-taiketsu-gba",
+    "title": "光之英雄传说 中文版",
+    "platform": "GBA",
+    "category": "handheld",
+    "desc": "光之英雄传说 中文版 · GBA"
   },
   {
     "id": "wario-land4-gba",
