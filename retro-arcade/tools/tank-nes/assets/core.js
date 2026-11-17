@@ -1,9 +1,11 @@
 // 坦克大战 1990 (Tank 1990 NES) 核心适配器 (GGEMU_CORE for JSNES)
 // 遵循 AGENTS.md 规范：
 // 1. 标准两键大药丸掌机 (A 开火、B 连射开火)
-// 2. 双层底栏标准契约 (reset + setMute/isMuted)
+// 2. 双层底栏标准契约 (reset + setMute/isMuted + btn-guide 攻略弹窗)
 // 3. 59s 立体声录屏分流与四重硬件静音锁
 // 4. 严禁内核私自监听底栏 DOM
+// 5. 结算与 Game Over 状态机智能穿透（杜绝卡死点不动）
+// 6. 重装战备补给（满级三星碎铁重炮、战车编制常驻）
 (function() {
   "use strict";
 
@@ -22,6 +24,9 @@
     offscreenCanvas.width = NES_W;
     offscreenCanvas.height = NES_H;
     offscreenCtx = offscreenCanvas.getContext("2d", { alpha: false });
+    if (offscreenCtx) {
+      offscreenCtx.imageSmoothingEnabled = false;
+    }
     imgData = offscreenCtx.createImageData(NES_W, NES_H);
     pixelBuf = new Uint32Array(imgData.data.buffer);
   }
@@ -34,7 +39,15 @@
   let speedMultiplier = 1;
   let rapidFireCount = 0;
 
-  // START / SELECT 8 帧按压防漏脉冲缓冲
+  // 攻略战备加护标志：默认关闭（保持原汁原味战役难度）
+  let cheatActive = false;
+  try {
+    if (typeof localStorage !== "undefined") {
+      cheatActive = localStorage.getItem("tank_cheat") === "true";
+    }
+  } catch (_) {}
+
+  // START / SELECT 按压防漏脉冲缓冲（增至 16 帧确保 100% 轮询响应）
   let startHoldFrames = 0;
   let selectHoldFrames = 0;
 
@@ -203,20 +216,59 @@
 
   let accumulator = 0;
   let lastTime = 0;
+  let inTick = false;
 
   function tick() {
-    if (!isBooted || !nes || isPaused) return;
+    if (!isBooted || !nes || isPaused || inTick) return;
+    inTick = true;
+    try {
+      if (startHoldFrames > 0) startHoldFrames--;
+      if (selectHoldFrames > 0) selectHoldFrames--;
 
-    if (startHoldFrames > 0) startHoldFrames--;
-    if (selectHoldFrames > 0) selectHoldFrames--;
+    // 智能穿透：打完一局结算（RAM 0x00 === 192）或被打死 Game Over 等待（RAM 0x00 === 192）
+    // 原版卡带在此时仅轮询 START 键。若用户按 A/B/方向键，自动激活 16 帧 START 脉冲穿透，杜绝卡死点不动
+    try {
+      if (nes.mmap && typeof nes.mmap.load === "function") {
+        const state0 = nes.mmap.load(0x00);
+        if (state0 === 192) {
+          const userInteracted = rawButtons.a || rawButtons.b || rawButtons.up || rawButtons.down || rawButtons.left || rawButtons.right || rawButtons.start;
+          if (userInteracted && startHoldFrames < 8) {
+            startHoldFrames = 16;
+          }
+        }
+
+        // 攻略战备常驻守护：开启重装战备补给后，出战即满级三星碎铁重炮，且战车编制常驻
+        if (cheatActive) {
+          // 1P 坦克等级（0xA8）：3 为手枪三星满级重炮（双发连射+破铁碎砖）
+          const p1Level = nes.mmap.load(0xA8);
+          if (p1Level < 3) {
+            nes.mmap.write(0xA8, 3);
+          }
+          // 1P 剩余生命（0x51）：战斗中生命常驻保持 >= 8
+          const p1Lives = nes.mmap.load(0x51);
+          if (p1Lives < 8 && p1Lives > 0) {
+            nes.mmap.write(0x51, 8);
+          }
+          // 2P 坦克等级（0xA9）与剩余生命（0x52）
+          const p2Level = nes.mmap.load(0xA9);
+          if (p2Level < 3) {
+            nes.mmap.write(0xA9, 3);
+          }
+          const p2Lives = nes.mmap.load(0x52);
+          if (p2Lives < 8 && p2Lives > 0) {
+            nes.mmap.write(0x52, 8);
+          }
+        }
+      }
+    } catch (_) {}
 
     const effectiveStart = rawButtons.start || (startHoldFrames > 0);
     const effectiveSelect = rawButtons.select || (selectHoldFrames > 0);
 
-    // 连发逻辑：B 键按住时以 4 帧周期高速连发
+    // 连发逻辑：B 键按住时以 4 帧周期高速连发，A 键为单发点射
     rapidFireCount++;
     const isRapid = rawButtons.b && (rapidFireCount % 4 < 2);
-    const fireDown = rawButtons.a || isRapid;
+    const fireA = rawButtons.a || isRapid;
 
     const setBtn = (btnIndex, isDown) => {
       if (isDown) {
@@ -230,10 +282,35 @@
     setBtn(NES_BTN.down, rawButtons.down);
     setBtn(NES_BTN.left, rawButtons.left);
     setBtn(NES_BTN.right, rawButtons.right);
-    setBtn(NES_BTN.a, fireDown);
-    setBtn(NES_BTN.b, fireDown);
+    setBtn(NES_BTN.a, fireA);
+    setBtn(NES_BTN.b, false); // 严格保持 B 硬件断开，杜绝与 A 键同时激活产生平行双发
     setBtn(NES_BTN.start, effectiveStart);
     setBtn(NES_BTN.select, effectiveSelect);
+
+    // 2P 独立按键状态与连发逻辑
+    if (startHoldFramesP2 > 0) startHoldFramesP2--;
+    if (selectHoldFramesP2 > 0) selectHoldFramesP2--;
+    const effectiveStartP2 = rawButtonsP2.start || (startHoldFramesP2 > 0);
+    const effectiveSelectP2 = rawButtonsP2.select || (selectHoldFramesP2 > 0);
+    const isRapidP2 = (rawButtonsP2.b || rawButtonsP2.tb) && (rapidFireCount % 4 < 2);
+    const fireAP2 = rawButtonsP2.a || rawButtonsP2.ta || isRapidP2;
+
+    const setBtn2 = (btnIndex, isDown) => {
+      if (isDown) {
+        nes.buttonDown(2, btnIndex);
+      } else {
+        nes.buttonUp(2, btnIndex);
+      }
+    };
+
+    setBtn2(NES_BTN.up, rawButtonsP2.up);
+    setBtn2(NES_BTN.down, rawButtonsP2.down);
+    setBtn2(NES_BTN.left, rawButtonsP2.left);
+    setBtn2(NES_BTN.right, rawButtonsP2.right);
+    setBtn2(NES_BTN.a, fireAP2);
+    setBtn2(NES_BTN.b, false);
+    setBtn2(NES_BTN.start, effectiveStartP2);
+    setBtn2(NES_BTN.select, effectiveSelectP2);
 
     const now = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
     if (lastTime === 0) lastTime = now;
@@ -244,11 +321,18 @@
     const maxSteps = 4 * speedMultiplier;
     let steps = 0;
     while (accumulator >= FRAME_MS && steps < maxSteps) {
-      nes.frame();
+      try {
+        nes.frame();
+      } catch (err) {
+        console.warn("nes.frame 异常守护:", err);
+      }
       accumulator -= FRAME_MS;
       steps++;
     }
+  } finally {
+    inTick = false;
   }
+}
 
   function getNESClass() {
     const NESModule = (typeof window !== "undefined" && window.NES_MODULE) ? window.NES_MODULE :
@@ -264,6 +348,78 @@
     });
   }
 
+  function setupGuide() {
+    if (typeof document === "undefined") return;
+    const btnGuide = document.getElementById("btn-guide");
+    const guideModal = document.getElementById("guide-modal");
+    const guideClose = document.getElementById("guide-close");
+    const btnGuideOn = document.getElementById("btn-guide-on");
+    const btnGuideOff = document.getElementById("btn-guide-off");
+
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.classList.add("show");
+      setTimeout(() => { toast.classList.remove("show"); }, 2000);
+    }
+
+    if (btnGuide && guideModal) {
+      btnGuide.addEventListener("click", function() {
+        guideModal.style.display = "flex";
+      });
+    }
+
+    if (guideClose && guideModal) {
+      guideClose.addEventListener("click", function() {
+        guideModal.style.display = "none";
+      });
+    }
+
+    if (guideModal) {
+      guideModal.addEventListener("click", function(e) {
+        if (e.target === guideModal) {
+          guideModal.style.display = "none";
+        }
+      });
+    }
+
+    if (btnGuideOn) {
+      btnGuideOn.addEventListener("click", function() {
+        const xhs = window.xhs && window.xhs.miniTool;
+        const enableSupply = function() {
+          cheatActive = true;
+          try {
+            if (typeof localStorage !== "undefined") {
+              localStorage.setItem("tank_cheat", "true");
+            }
+          } catch (_) {}
+          showToast("已开启重装战备补给");
+          if (guideModal) guideModal.style.display = "none";
+        };
+
+        if (xhs && typeof xhs.followAuthor === "function") {
+          Promise.resolve(xhs.followAuthor()).then(enableSupply, enableSupply);
+        } else {
+          enableSupply();
+        }
+      });
+    }
+
+    if (btnGuideOff) {
+      btnGuideOff.addEventListener("click", function() {
+        cheatActive = false;
+        try {
+          if (typeof localStorage !== "undefined") {
+            localStorage.setItem("tank_cheat", "false");
+          }
+        } catch (_) {}
+        showToast("已恢复原版战役难度");
+        if (guideModal) guideModal.style.display = "none";
+      });
+    }
+  }
+
   const coreInstance = {
     id: "tank-nes",
     name: "坦克大战 1990",
@@ -271,8 +427,8 @@
       layout: "two-button",
       stick: false,
       actions: [
-        { id: "b", key: "B", label: "连发" }, // B 连射开火
-        { id: "a", key: "A", label: "开火" }  // A 单发开火
+        { id: "b", key: "B", label: "B" }, // B 连射开火
+        { id: "a", key: "A", label: "A" }  // A 单发开火
       ],
       capsules: [
         { id: "select", label: "选择" },
@@ -307,14 +463,26 @@
 
       isBooted = true;
 
-      // 预热 25 帧跨越开机黑屏，直出全彩大标题
+      // 预热步进：先跑 60 帧进入变种选单，按 7 次 UP 从魔改 Tank H 切换至正统经典 Tank A
       try {
-        for (let f = 0; f < 25; f++) {
-          nes.frame();
+        for (let f = 0; f < 60; f++) nes.frame();
+        for (let i = 0; i < 7; i++) {
+          nes.buttonDown(1, NES_BTN.up);
+          for (let f = 0; f < 16; f++) nes.frame();
+          nes.buttonUp(1, NES_BTN.up);
+          for (let f = 0; f < 16; f++) nes.frame();
         }
+        // 按 START 确认 Tank A 变种
+        nes.buttonDown(1, NES_BTN.start);
+        for (let f = 0; f < 8; f++) nes.frame();
+        nes.buttonUp(1, NES_BTN.start);
+        // 跑 270 帧拉起卷帘，直出 TANK 1990 全彩大标题
+        for (let f = 0; f < 270; f++) nes.frame();
       } catch (e) {
         console.warn("预热步进警告:", e);
       }
+
+      setupGuide();
 
       if (host && typeof host.onReady === "function") {
         host.onReady();
@@ -356,10 +524,18 @@
       audioRingL.fill(0);
       audioRingR.fill(0);
 
-      // 秒开大标题预热 25 帧
-      for (let f = 0; f < 25; f++) {
-        nes.frame();
+      // 秒开大标题预热：60 帧 + 7 次 UP 切换至 Tank A + START 确认 + 270 帧拉帘
+      for (let f = 0; f < 60; f++) nes.frame();
+      for (let i = 0; i < 7; i++) {
+        nes.buttonDown(1, NES_BTN.up);
+        for (let f = 0; f < 16; f++) nes.frame();
+        nes.buttonUp(1, NES_BTN.up);
+        for (let f = 0; f < 16; f++) nes.frame();
       }
+      nes.buttonDown(1, NES_BTN.start);
+      for (let f = 0; f < 8; f++) nes.frame();
+      nes.buttonUp(1, NES_BTN.start);
+      for (let f = 0; f < 270; f++) nes.frame();
     },
 
     tick: tick,
@@ -381,17 +557,17 @@
       else if (b === "start") {
         target.start = !!pressed;
         if (pressed) {
-          if (isP2) startHoldFramesP2 = 8;
+          if (isP2) startHoldFramesP2 = 16;
           else {
-            try { startHoldFrames = 8; } catch(_) {}
+            try { startHoldFrames = 16; } catch(_) {}
           }
         }
       } else if (b === "select") {
         target.select = !!pressed;
         if (pressed) {
-          if (isP2) selectHoldFramesP2 = 8;
+          if (isP2) selectHoldFramesP2 = 16;
           else {
-            try { selectHoldFrames = 8; } catch(_) {}
+            try { selectHoldFrames = 16; } catch(_) {}
           }
         }
       }
@@ -411,6 +587,28 @@
 
     video: function() {
       return { w: NES_W, h: NES_H };
+    },
+
+    getNES: function() {
+      return nes;
+    },
+
+    getCheatActive: function() {
+      return cheatActive;
+    },
+
+    setCheat: function(active) {
+      cheatActive = !!active;
+      try {
+        if (typeof localStorage !== "undefined") {
+          localStorage.setItem("tank_cheat", cheatActive ? "true" : "false");
+        }
+      } catch (_) {}
+      return cheatActive;
+    },
+
+    toggleCheat: function() {
+      return this.setCheat(!cheatActive);
     },
 
     setSpeed: function(mul) {

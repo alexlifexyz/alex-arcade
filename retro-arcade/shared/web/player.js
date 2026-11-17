@@ -190,9 +190,7 @@
     drawFrame();
     function loop() {
       fullRafId = window.requestAnimationFrame(loop);
-      if (coreRef && typeof coreRef.tick === 'function') {
-        try { coreRef.tick(); } catch (_) {}
-      }
+      // 严禁在此处调用 coreRef.tick()！帧推进完全由 iframe 内 shell.js 统一负责，杜绝双 rAF 并发重入导致 CPU 崩溃 (invalid opcode at $3a)
       drawFrame();
       if (gamepad) {
         var s = gamepad.poll();
@@ -445,7 +443,18 @@
     tracker = VK.createTracker(bridge);
     var focusOk = B.focusIframe(frame);
     document.documentElement.setAttribute('data-kbd-focus', focusOk ? 'ok' : 'error');
-    lines.push((focusOk ? 'kbd-focus-ok' : 'kbd-focus-error') + '  网页层未绑定 keydown/keyup，键盘沿用内核 KEY_MAP');
+
+    // 挂载 PC 全局键盘支持
+    if (window.WEB_KEYBOARD) {
+      if (window.WEB_PLAYER._keyboard) {
+        window.WEB_PLAYER._keyboard.detach();
+      }
+      var kbd = window.WEB_KEYBOARD.createKeyboard({ bridge: bridge, window: window, document: document });
+      kbd.attach();
+      window.WEB_PLAYER._keyboard = kbd;
+      lines.push('keyboard-ready  PC键盘已全局激活：WASD/方向键移动，J开火，K连发，Enter开始，Shift/空格选择');
+    }
+
     lines.push('输入桥键表 ' + bridge.getKeymap().order.length + ' 键：' + bridge.getKeymap().order.join(','));
     lines.push('Hold Buffer ' + bridge.holdMs + 'ms；失焦 / 切模式 / iframe 重载全键释放');
 
@@ -468,6 +477,7 @@
 
     bindTools();
     applyMode();
+    setupNetplay();
 
     // 步骤 6：自检 20 次模式切换
     if (selftest) {
@@ -485,5 +495,188 @@
     }
   }
 
-  frame.src = 'tools/' + game.id + '/index.html';
+  // 13. WebRTC 跨端双人联机支持 (PC 房主 1P + 手机遥控 2P)
+  function setupNetplay() {
+    var Netplay = window.ArcadeNetplay;
+    if (!Netplay) return;
+
+    // === A. 手机端 (访客 2P) 流程 ===
+    if (Netplay.isClientMode()) {
+      document.body.classList.add('is-client');
+      var clientVideo = document.getElementById('client-video');
+      var clientAudioPrompt = document.getElementById('client-audio-prompt');
+      var btnClientStart = document.getElementById('btn-client-start');
+      var pingEl = document.getElementById('netplay-ping');
+
+      function activateVideo() {
+        if (clientVideo) {
+          clientVideo.play().catch(function () {});
+        }
+        if (clientAudioPrompt) clientAudioPrompt.style.display = 'none';
+      }
+
+      if (btnClientStart) {
+        btnClientStart.addEventListener('click', activateVideo);
+        btnClientStart.addEventListener('touchend', activateVideo);
+      }
+
+      // 绑定手机端虚拟触摸按键
+      var touchButtons = document.querySelectorAll('#client-stage [data-btn]');
+      touchButtons.forEach(function (btnEl) {
+        var btnId = btnEl.getAttribute('data-btn');
+        function press(e) {
+          if (e) e.preventDefault();
+          btnEl.classList.add('active');
+          Netplay.sendInput(btnId, true);
+        }
+        function release(e) {
+          if (e) e.preventDefault();
+          btnEl.classList.remove('active');
+          Netplay.sendInput(btnId, false);
+        }
+        btnEl.addEventListener('touchstart', press, { passive: false });
+        btnEl.addEventListener('touchend', release, { passive: false });
+        btnEl.addEventListener('touchcancel', release, { passive: false });
+        btnEl.addEventListener('mousedown', press);
+        btnEl.addEventListener('mouseup', release);
+      });
+
+      // 启动 Client 模式连接房主
+      Netplay.startClient({
+        onConnected: function () {
+          if (pingEl) pingEl.textContent = '已连接';
+        },
+        onStream: function (remoteStream) {
+          if (clientVideo) {
+            clientVideo.srcObject = remoteStream;
+            clientVideo.play().catch(function () {});
+          }
+        },
+        onDisconnected: function () {
+          alert('与 1P 房主的连接已断开');
+        }
+      });
+      return;
+    }
+
+    // === B. PC 房主 (1P) 流程 ===
+    var btnNetplay = document.getElementById('btn-netplay');
+    var modal = document.getElementById('netplay-modal');
+    var roomBadge = document.getElementById('netplay-room-badge');
+    var qrContainer = document.getElementById('netplay-qrcode');
+    var hostInput = document.getElementById('netplay-host-input');
+    var btnUpdateQr = document.getElementById('btn-update-qr');
+    var btnCopyLink = document.getElementById('btn-copy-link');
+    var btnCloseModal = document.getElementById('btn-close-modal');
+    var statusText = document.getElementById('netplay-status-text');
+
+    if (!btnNetplay || !modal) return;
+
+    function renderQr(url) {
+      if (!qrContainer || typeof QRCode === 'undefined') return;
+      qrContainer.innerHTML = '';
+      new QRCode(qrContainer, {
+        text: url,
+        width: 160,
+        height: 160,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+
+    // 默认局域网或当前地址推测
+    var isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    var currentHost = window.location.host;
+    if (isLocal) {
+      currentHost = '192.168.0.100:' + (window.location.port || '8766');
+    }
+    if (hostInput) hostInput.value = currentHost;
+    var ipRow = document.getElementById('netplay-ip-row');
+    if (ipRow && !isLocal) {
+      ipRow.style.display = 'none'; // 线上生产环境直接隐藏局域网配置输入框
+    }
+
+    function openModal() {
+      modal.classList.add('show');
+      if (!Netplay.peer) {
+        statusText.textContent = '正在创建联机房间...';
+        Netplay.startHost({
+          getStream: function () {
+            if (!fullCanvas || !fullCanvas.captureStream) return null;
+            var stream = fullCanvas.captureStream(60);
+            if (coreRef && typeof coreRef.connectRecordingAudio === 'function') {
+              var track = coreRef.connectRecordingAudio();
+              if (track && stream.addTrack) stream.addTrack(track);
+            }
+            return stream;
+          },
+          onReady: function (roomId) {
+            if (roomBadge) roomBadge.textContent = roomId;
+            statusText.textContent = '等待 2P 手机扫码连接...';
+            var joinUrl = Netplay.getJoinUrl(hostInput.value.trim() || undefined);
+            renderQr(joinUrl);
+          },
+          onClientJoin: function () {
+            statusText.textContent = '2P 手机玩家已就绪！';
+            statusText.style.color = '#4ade80';
+            toast('2P 手机玩家已加入对战！请按 Shift 选 2 PLAYERS 开始');
+          },
+          onClientLeave: function () {
+            statusText.textContent = '2P 玩家已断开连接';
+            statusText.style.color = '#f87171';
+            toast('2P 手机玩家已离开');
+          },
+          onInput: function (btn, pressed, player) {
+            if (coreRef && typeof coreRef.setButton === 'function') {
+              coreRef.setButton(btn, pressed, player || 2);
+            }
+          }
+        });
+      } else {
+        var joinUrl = Netplay.getJoinUrl(hostInput.value.trim() || undefined);
+        renderQr(joinUrl);
+      }
+    }
+
+    btnNetplay.addEventListener('click', openModal);
+
+    if (btnCloseModal) {
+      btnCloseModal.addEventListener('click', function () {
+        modal.classList.remove('show');
+      });
+    }
+
+    if (btnUpdateQr) {
+      btnUpdateQr.addEventListener('click', function () {
+        if (!Netplay.roomId) return;
+        var joinUrl = Netplay.getJoinUrl(hostInput.value.trim() || undefined);
+        renderQr(joinUrl);
+        toast('二维码已更新');
+      });
+    }
+
+    if (btnCopyLink) {
+      btnCopyLink.addEventListener('click', function () {
+        if (!Netplay.roomId) return;
+        var joinUrl = Netplay.getJoinUrl(hostInput.value.trim() || undefined);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(joinUrl).then(function () {
+            toast('邀请链接已复制到剪贴板！');
+          }).catch(function () {
+            prompt('请手动复制联机链接:', joinUrl);
+          });
+        } else {
+          prompt('请手动复制联机链接:', joinUrl);
+        }
+      });
+    }
+  }
+
+  // 如果是 Client 模式，直接初始化，不用加载本地 iframe
+  if (window.ArcadeNetplay && window.ArcadeNetplay.isClientMode()) {
+    setupNetplay();
+  } else {
+    frame.src = 'tools/' + game.id + '/index.html';
+  }
 })();

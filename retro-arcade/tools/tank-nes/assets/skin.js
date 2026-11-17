@@ -18,7 +18,8 @@
       cap: "#8e8e97",
       base: "#bfbfc7",
       knob: "#d0222b",
-      text: "rgba(58,58,70,0.78)"
+      text: "rgba(58,58,70,0.78)",
+      dpad: { top: "#525160", bottom: "#343340", line: "rgba(255,255,255,0.45)", stroke: "rgba(30,30,40,0.65)" }
     },
     {
       id: "famicom",
@@ -32,7 +33,8 @@
       cap: "#8b2026",
       base: "#d9d1bf",
       knob: "#d0222b",
-      text: "rgba(130,32,38,0.85)"
+      text: "rgba(130,32,38,0.85)",
+      dpad: { top: "#78242b", bottom: "#4a1418", line: "rgba(255,230,230,0.55)", stroke: "rgba(40,10,12,0.7)" }
     },
     {
       id: "black",
@@ -46,7 +48,8 @@
       cap: "#3a3c42",
       base: "#454850",
       knob: "#d0222b",
-      text: "rgba(232,234,238,0.78)"
+      text: "rgba(232,234,238,0.78)",
+      dpad: { top: "#32343a", bottom: "#18191c", line: "rgba(255,255,255,0.38)", stroke: "rgba(0,0,0,0.75)" }
     },
     {
       id: "sfc",
@@ -60,7 +63,8 @@
       cap: "#8e8e97",
       base: "#c2c2c9",
       knob: "#d0222b",
-      text: "rgba(58,58,70,0.78)"
+      text: "rgba(58,58,70,0.78)",
+      dpad: { top: "#4e5159", bottom: "#303238", line: "rgba(255,255,255,0.45)", stroke: "rgba(20,22,26,0.65)" }
     },
     {
       id: "mint",
@@ -74,7 +78,8 @@
       cap: "#77a796",
       base: "#b0d8c9",
       knob: "#d0222b",
-      text: "rgba(28,72,60,0.78)"
+      text: "rgba(28,72,60,0.78)",
+      dpad: { top: "#356152", bottom: "#1c382e", line: "rgba(230,255,245,0.5)", stroke: "rgba(15,35,28,0.7)" }
     }
   ];
 
@@ -187,12 +192,19 @@
     ctx.strokeStyle = "rgba(255,255,255,0.22)";
     ctx.lineWidth = 1;
     ctx.stroke();
-    if (iconFn) iconFn(ctx, box.x + 14, box.y + box.h / 2);
-    ctx.font = "11px " + FONT_SANS;
-    ctx.textAlign = "left";
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = "rgba(255,255,255,0.7)";
-    ctx.fillText(text, box.x + 25, box.y + box.h / 2 + 0.5);
+    if (!text || box.w <= 30) {
+      if (iconFn) iconFn(ctx, box.x + box.w / 2, box.y + box.h / 2);
+    } else {
+      const isSmall = box.w <= 52;
+      const iconX = isSmall ? box.x + 10 : box.x + 14;
+      const textX = isSmall ? box.x + 19 : box.x + 25;
+      if (iconFn) iconFn(ctx, iconX, box.y + box.h / 2);
+      ctx.font = (isSmall ? "10px " : "11px ") + FONT_SANS;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "rgba(255,255,255,0.78)";
+      ctx.fillText(text, textX, box.y + box.h / 2 + 0.5);
+    }
     ctx.restore();
   }
 
@@ -227,6 +239,21 @@
     }
   }
 
+  function drawFsIcon(ctx, x, y) {
+    ctx.save();
+    ctx.strokeStyle = "rgba(255,255,255,0.85)";
+    ctx.lineWidth = 1.4;
+    ctx.lineCap = "round";
+    const s = 4.2;
+    ctx.beginPath();
+    ctx.moveTo(x - s, y - s + 2.5); ctx.lineTo(x - s, y - s); ctx.lineTo(x - s + 2.5, y - s);
+    ctx.moveTo(x + s - 2.5, y - s); ctx.lineTo(x + s, y - s); ctx.lineTo(x + s, y - s + 2.5);
+    ctx.moveTo(x - s, y + s - 2.5); ctx.lineTo(x - s, y + s); ctx.lineTo(x - s + 2.5, y + s);
+    ctx.moveTo(x + s - 2.5, y + s); ctx.lineTo(x + s, y + s); ctx.lineTo(x + s, y + s - 2.5);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   // 扬声器打孔
   function drawSpeakerGrille(ctx, x, y, cols, rows) {
     ctx.save();
@@ -252,40 +279,41 @@
     const cy = box.y;
     const plateR = box.plateR || (1.5 * box.size + 10);
 
-    // 凹陷大底盘 (与右侧大圆盘 1:1 绝对等大)
-    drawRecessedPlate(ctx, p => pathCircle(p, cx, cy, plateR), adjustColor(theme.body, -0.06), theme, 0.9);
+    // 凹陷大底盘 (与右侧大圆盘 1:1 绝对等大，统一使用 theme.plate 呼应主题)
+    drawRecessedPlate(ctx, p => pathCircle(p, cx, cy, plateR), theme.plate || adjustColor(theme.body, -0.06), theme, 0.9);
 
     drawMechanicalCross(ctx, box, theme);
   }
 
   function pathPlus(ctx, cx, cy, span, thick, rad) {
+    if (span <= 0 || thick <= 0) return;
     const hs = span / 2;
     const ht = thick / 2;
-    const r = Math.min(rad, ht * 0.85);
+    const r = Math.max(0, Math.min(rad || 0, ht * 0.85));
     const L = cx - hs, R = cx + hs, T = cy - hs, B = cy + hs;
     const l = cx - ht, ri = cx + ht, t = cy - ht, b = cy + ht;
     ctx.beginPath();
     ctx.moveTo(l + r, T);
     ctx.lineTo(ri - r, T);
-    ctx.arcTo(ri, T, ri, T + r, r);
+    if (r > 0) ctx.arcTo(ri, T, ri, T + r, r);
     ctx.lineTo(ri, t);
     ctx.lineTo(R - r, t);
-    ctx.arcTo(R, t, R, t + r, r);
+    if (r > 0) ctx.arcTo(R, t, R, t + r, r);
     ctx.lineTo(R, b - r);
-    ctx.arcTo(R, b, R - r, b, r);
+    if (r > 0) ctx.arcTo(R, b, R - r, b, r);
     ctx.lineTo(ri, b);
     ctx.lineTo(ri, B - r);
-    ctx.arcTo(ri, B, ri - r, B, r);
+    if (r > 0) ctx.arcTo(ri, B, ri - r, B, r);
     ctx.lineTo(l + r, B);
-    ctx.arcTo(l, B, l, B - r, r);
+    if (r > 0) ctx.arcTo(l, B, l, B - r, r);
     ctx.lineTo(l, b);
     ctx.lineTo(L + r, b);
-    ctx.arcTo(L, b, L, b - r, r);
+    if (r > 0) ctx.arcTo(L, b, L, b - r, r);
     ctx.lineTo(L, t + r);
-    ctx.arcTo(L, t, L + r, t, r);
+    if (r > 0) ctx.arcTo(L, t, L + r, t, r);
     ctx.lineTo(l, t);
     ctx.lineTo(l, T + r);
-    ctx.arcTo(l, T, l + r, T, r);
+    if (r > 0) ctx.arcTo(l, T, l + r, T, r);
     ctx.closePath();
   }
 
@@ -294,26 +322,33 @@
     const cy = box.y;
     const span = Math.round(box.size * 2.9);
     const thick = Math.round(box.size * 1.05);
+
+    // 根据主题动态提取十字键配色，若未显式指定则根据主题明暗色调自适应
+    const dpadTop = (theme.dpad && theme.dpad.top) || (theme.light ? adjustColor(theme.body, -0.62) : "#38393e");
+    const dpadBottom = (theme.dpad && theme.dpad.bottom) || (theme.light ? adjustColor(theme.body, -0.78) : "#1e1f23");
+    const dpadLine = (theme.dpad && theme.dpad.line) || (theme.light ? "rgba(255,255,255,0.62)" : "rgba(255,255,255,0.38)");
+    const dpadStroke = (theme.dpad && theme.dpad.stroke) || "rgba(0,0,0,0.55)";
+
     ctx.save();
     ctx.shadowColor = "rgba(0,0,0,0.65)";
     ctx.shadowBlur = 8;
     ctx.shadowOffsetY = 4;
     pathPlus(ctx, cx, cy, span, thick, 12);
     const grad = ctx.createLinearGradient(0, cy - span / 2, 0, cy + span / 2);
-    grad.addColorStop(0, theme.light ? "#4a4b50" : "#38393e");
-    grad.addColorStop(1, theme.light ? "#2a2b30" : "#1e1f23");
+    grad.addColorStop(0, dpadTop);
+    grad.addColorStop(1, dpadBottom);
     ctx.fillStyle = grad;
     ctx.fill();
     ctx.restore();
 
     ctx.save();
     pathPlus(ctx, cx, cy, span, thick, 12);
-    ctx.strokeStyle = "rgba(0,0,0,0.55)";
+    ctx.strokeStyle = dpadStroke;
     ctx.lineWidth = 1.2;
     ctx.stroke();
     const groove = Math.round(thick * 0.55);
     const inset = 14;
-    ctx.strokeStyle = "rgba(255,255,255,0.62)";
+    ctx.strokeStyle = dpadLine;
     ctx.lineWidth = 2.5;
     ctx.lineCap = "round";
     ctx.beginPath();
@@ -331,7 +366,7 @@
 
   // 操控区电路纹。画在底板之上、圆盘之下，圆盘是不透明的，纹路不会穿进按键。
   function drawControlDeckTexture(ctx, width, height, top, theme) {
-    if (top > height - 36) return;
+    if (top > height - 110) return;
     ctx.save();
     ctx.beginPath();
     ctx.rect(0, top, width, height - top);
@@ -473,9 +508,9 @@
       drawSpeakerGrille(ctx, bezel.x + bezel.w - 26 - 31, sy, 5, 4);
     }
 
-    if (bezel) drawControlDeckTexture(ctx, width, height, bezel.y + bezel.h + 4, theme);
+    if (!env.landscape && bezel) drawControlDeckTexture(ctx, width, height, bezel.y + bezel.h + 4, theme);
 
-    // 屏幕下方的【横屏】和【配色】按钮
+    // 屏幕下方的【横屏】和【配色】按钮 (移除多余的全屏按钮)
     drawMiniBtn(ctx, hit.orientBtn, env.landscape ? "竖屏" : "横屏", drawRotateIcon);
     drawMiniBtn(ctx, hit.skinBtn, "配色", drawSkinIcon);
 
@@ -613,29 +648,22 @@
       });
     }
 
-    // 口号标语
+    // 屏幕底部正中央绘制「Alex 游戏百宝箱」(无全屏按钮干扰，绝对居中优雅呈现)
     if (hit.sloganAt && info.slogan) {
       ctx.save();
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillStyle = theme.light ? "rgba(40,40,48,0.88)" : "rgba(255,255,255,0.92)";
+      ctx.fillStyle = "rgba(255,255,255,0.92)";
+      ctx.shadowColor = "rgba(0,0,0,0.85)";
+      ctx.shadowBlur = 3;
+      ctx.shadowOffsetY = 1;
       var sloganSize = 12;
       ctx.font = "600 " + sloganSize + "px " + FONT_SANS;
-      while (sloganSize > 8 && ctx.measureText(info.slogan).width > hit.sloganAt.maxW) {
-        sloganSize -= 1;
+      while (sloganSize > 9 && ctx.measureText(info.slogan).width > hit.sloganAt.maxW) {
+        sloganSize -= 0.5;
         ctx.font = "600 " + sloganSize + "px " + FONT_SANS;
       }
       ctx.fillText(info.slogan, hit.sloganAt.x, hit.sloganAt.y);
-      ctx.restore();
-    } else if (hit.capsuleRowY !== undefined && info.slogan) {
-      ctx.save();
-      ctx.font = "11px " + FONT_SANS;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillStyle = theme.text;
-      const roundTop = info.capsules.map(c => hit[c.id]).filter(c => c && c.roundCap);
-      const sloganY = roundTop.length ? Math.min.apply(null, roundTop.map(c => c.y)) - 22 : hit.capsuleRowY - 22;
-      ctx.fillText(info.slogan, width / 2, sloganY);
       ctx.restore();
     }
 
@@ -825,18 +853,122 @@
     // 2. 实体机械十字键的四臂精灵 (若为十字键模式)
     const hasStick = !!(info.pad && info.pad.stick);
     if (!hasStick && hit.up && hit.down && hit.left && hit.right) {
+      const center = hit.dpadCenter || {
+        x: (hit.left.x + hit.right.x + hit.right.w) / 2,
+        y: (hit.up.y + hit.down.y + hit.down.h) / 2,
+        size: Math.max(hit.up.w, hit.up.h)
+      };
+      const cx = center.x;
+      const cy = center.y;
+      const size = center.size;
+      const span = Math.round(size * 2.9);
+      const thick = Math.round(size * 1.05);
+      const hs = span / 2;
+      const ht = thick / 2;
+      const rad = 12;
+      const r = Math.max(0, Math.min(rad, ht * 0.85));
+
+      // 十字键按压深度遮罩与下陷颜色 (彻底遮蔽凸起按键与高光中线)
+      const pressTop = (theme.dpad && theme.dpad.bottom) ? adjustColor(theme.dpad.bottom, -0.35) : "#101114";
+      const pressBottom = (theme.dpad && theme.dpad.bottom) ? adjustColor(theme.dpad.bottom, -0.55) : "#0a0a0d";
+      const pressStroke = "rgba(0,0,0,0.85)";
+
       ["up", "down", "left", "right"].forEach(dir => {
-        const b = hit[dir];
-        if (!b) return;
+        let bx, by, bw, bh;
+        const armLen = Math.max(1, hs - ht + 0.5);
+        const armThick = Math.max(1, thick + 1);
+        if (dir === "up") {
+          // 只覆盖从中心枢轴上缘 (cy - ht) 向上突出的臂身，绝对不侵入中间
+          bx = cx - ht - 0.5;
+          by = cy - hs - 0.5;
+          bw = armThick;
+          bh = armLen;
+        } else if (dir === "down") {
+          // 只覆盖从中心枢轴下缘 (cy + ht) 向下突出的臂身
+          bx = cx - ht - 0.5;
+          by = cy + ht;
+          bw = armThick;
+          bh = armLen;
+        } else if (dir === "left") {
+          // 只覆盖从中心枢轴左缘 (cx - ht) 向左突出的臂身
+          bx = cx - hs - 0.5;
+          by = cy - ht - 0.5;
+          bw = armLen;
+          bh = armThick;
+        } else if (dir === "right") {
+          // 只覆盖从中心枢轴右缘 (cx + ht) 向右突出的臂身
+          bx = cx + ht;
+          by = cy - ht - 0.5;
+          bw = armLen;
+          bh = armThick;
+        }
+
         sprites[dir] = {
-          x: b.x - pad,
-          y: b.y - pad,
-          up: makeSprite(b.w, b.h, pad, () => {}),
-          down: makeSprite(b.w, b.h, pad, ctx => {
+          x: bx - pad,
+          y: by - pad,
+          up: makeSprite(bw, bh, pad, () => {}),
+          down: makeSprite(bw, bh, pad, ctx => {
+            const radArm = Math.max(0, Math.min(r + 0.5, bw / 2, bh / 2));
+            ctx.save();
             ctx.beginPath();
-            pathRoundRect(ctx, 1, 1, Math.max(1, b.w - 2), Math.max(1, b.h - 2), 8);
-            ctx.fillStyle = "rgba(0,0,0,0.28)";
+            if (dir === "up") {
+              // 顶部两角饱满圆角，底部精准平贴中心交叉边缘 (绝不挡到十字键正中心)
+              ctx.moveTo(0, bh);
+              ctx.lineTo(0, radArm);
+              if (radArm > 0) ctx.arcTo(0, 0, radArm, 0, radArm);
+              ctx.lineTo(bw - radArm, 0);
+              if (radArm > 0) ctx.arcTo(bw, 0, bw, radArm, radArm);
+              ctx.lineTo(bw, bh);
+            } else if (dir === "down") {
+              // 顶部精准平贴中心交叉边缘，底部两角饱满圆角
+              ctx.moveTo(0, 0);
+              ctx.lineTo(bw, 0);
+              ctx.lineTo(bw, bh - radArm);
+              if (radArm > 0) ctx.arcTo(bw, bh, bw - radArm, bh, radArm);
+              ctx.lineTo(radArm, bh);
+              if (radArm > 0) ctx.arcTo(0, bh, 0, bh - radArm, radArm);
+            } else if (dir === "left") {
+              // 右侧精准平贴中心交叉边缘，左端两角饱满圆角
+              ctx.moveTo(bw, 0);
+              ctx.lineTo(bw, bh);
+              ctx.lineTo(radArm, bh);
+              if (radArm > 0) ctx.arcTo(0, bh, 0, bh - radArm, radArm);
+              ctx.lineTo(0, radArm);
+              if (radArm > 0) ctx.arcTo(0, 0, radArm, 0, radArm);
+            } else if (dir === "right") {
+              // 左侧精准平贴中心交叉边缘，右端两角饱满圆角
+              ctx.moveTo(0, 0);
+              ctx.lineTo(bw - radArm, 0);
+              if (radArm > 0) ctx.arcTo(bw, 0, bw, radArm, radArm);
+              ctx.lineTo(bw, bh - radArm);
+              if (radArm > 0) ctx.arcTo(bw, bh, bw - radArm, bh, radArm);
+              ctx.lineTo(0, bh);
+            }
+            ctx.closePath();
+
+            // 1. 深度不透明机械渐变，完全覆盖突出臂表面的亮色与白色刻线
+            const grad = ctx.createLinearGradient(0, 0, 0, bh);
+            grad.addColorStop(0, pressTop);
+            grad.addColorStop(1, pressBottom);
+            ctx.fillStyle = grad;
             ctx.fill();
+
+            // 2. 机械深缝与外围阴影
+            ctx.strokeStyle = pressStroke;
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+
+            // 3. 端部微凹沉孔与指腹下陷立体光影
+            ctx.save();
+            ctx.clip();
+            const shadeGrad = ctx.createRadialGradient(bw / 2, bh / 2, 2, bw / 2, bh / 2, Math.max(bw, bh));
+            shadeGrad.addColorStop(0, "rgba(0,0,0,0.12)");
+            shadeGrad.addColorStop(1, "rgba(0,0,0,0.5)");
+            ctx.fillStyle = shadeGrad;
+            ctx.fill();
+            ctx.restore();
+
+            ctx.restore();
           })
         };
       });
@@ -1052,7 +1184,7 @@
 
   window.GGEMU_SKIN = {
     themes: THEMES.concat([{ id: "classic", name: "经典" }]),
-    layout: { bezelInset: 10, screenInset: 22, bezelAbove: 66, band: 34, topPad: 14 },
+    layout: { bezelInset: 10, screenInset: 20, bezelAbove: 46, band: 44, topPad: 14 },
     storageKey: "ggemu_skin_pocket",
     find: findTheme,
 

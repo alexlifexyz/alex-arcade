@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>坦克大战 1990</title>
-  <link rel="stylesheet" href="./assets/style.css" />
+  <link rel="stylesheet" href="./assets/style.css?v=1.0.4" />
   <script>
     window.addEventListener('error', function(e) {
       console.error('[UNCAUGHT ERROR]', e);
@@ -26,11 +26,58 @@
 <body>
   <div id="toast" class="toast"></div>
 
+  <!-- 攻略笔记弹窗 (纯净原版机制写法，符合避坑规范) -->
+  <div id="guide-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">坦克大战 1990 通关指南</div>
+        <button id="guide-close" class="modal-close-btn" type="button">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="guide-section author-card">
+          <div class="author-info">
+            <div class="author-name">Alex 游戏百宝箱</div>
+            <div class="author-desc">默认原版经典战役。开启战备补给，解锁满级碎铁重炮与战车编制常驻。</div>
+          </div>
+          <button id="btn-guide-on" class="btn-follow" type="button">关注并开启重装战备补给</button>
+          <button id="btn-guide-off" class="btn-follow" type="button" style="margin-top:8px;background:#2a2a30;">恢复原版难度</button>
+        </div>
+        <div class="guide-section">
+          <div class="section-title">战地重炮与道具说明</div>
+          <div class="guide-item">
+            <span class="guide-tag gold">三星重炮</span>
+            <span class="guide-desc">升至重装坦克后子弹提速为高速穿甲弹，同屏支持两连发射击并能击穿坚硬白铁壁。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag red">铁壁护鹰</span>
+            <span class="guide-desc">拾取铁锹道具，老鹰基地周围红砖将瞬间加固为不可摧毁的白色铁墙，固若金汤。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag green">全图清屏</span>
+            <span class="guide-desc">拾取手雷道具，全战场敌方现存战车瞬间全屏引爆，迅速化解老鹰被围困危机。</span>
+          </div>
+          <div class="guide-item">
+            <span class="guide-tag gold">定时时钟</span>
+            <span class="guide-desc">拾取时钟道具，敌方所有坦克将被完全冻结静止，可乘机安全推进逐一歼灭。</span>
+          </div>
+        </div>
+        <div class="guide-section">
+          <div class="section-title">战备补给加护说明</div>
+          <div class="guide-item">
+            <span class="guide-tag green">编制常驻</span>
+            <span class="guide-desc">开启重装战备后，出战即配备三星满级穿甲双发重炮，战车编制常驻，重返战场持续作战。</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 底部服务检修控制面板 (标准双层控制面板) -->
   <div id="deck-controls">
-    <!-- 第二层：游戏控制辅助层 (左侧复位，右侧声音，左右工整对称) -->
+    <!-- 第二层：游戏控制辅助层 (左侧复位，中间攻略，右侧声音，工整对称) -->
     <div id="toolbar-sub">
       <button id="btn-reset" type="button">复位</button>
+      <button id="btn-guide" type="button">攻略</button>
       <button id="btn-sound" type="button">声音</button>
     </div>
     <!-- 第一层：系统工具底栏 (标准4键) -->
@@ -46,13 +93,13 @@
   <canvas id="main-canvas"></canvas>
 
   <!-- 引入依赖脚本 (严格按序外置加载，严禁 type=module) -->
-  <script src="./assets/config.js"></script>
-  <script src="./assets/xhs-bridge.js"></script>
-  <script src="./assets/nes.min.js"></script>
-  <script src="./assets/lzstring.js"></script>
-  <script src="./assets/rom.js"></script>
-  <script src="./assets/core.js"></script>
-  <script src="./assets/skin.js"></script>
-  <script src="./assets/shell.js"></script>
+  <script src="./assets/config.js?v=1.0.4"></script>
+  <script src="./assets/xhs-bridge.js?v=1.0.4"></script>
+  <script src="./assets/nes.min.js?v=1.0.4"></script>
+  <script src="./assets/lzstring.js?v=1.0.4"></script>
+  <script src="./assets/rom.js?v=1.0.4"></script>
+  <script src="./assets/core.js?v=1.0.4"></script>
+  <script src="./assets/skin.js?v=1.0.4"></script>
+  <script src="./assets/shell.js?v=1.0.4"></script>
 </body>
 </html>
