@@ -496,6 +496,11 @@
   }
 
   // 13. WebRTC 跨端双人联机支持 (PC 房主 1P + 手机遥控 2P)
+  function isCapsuleBtnId(btn) {
+    var norm = String(btn || '').toLowerCase().replace(/^btn-/, '');
+    return norm === 'start' || norm === 'select' || norm === 'coin';
+  }
+
   function setupNetplay() {
     var Netplay = window.ArcadeNetplay;
     if (!Netplay) return;
@@ -507,6 +512,198 @@
       var clientAudioPrompt = document.getElementById('client-audio-prompt');
       var btnClientStart = document.getElementById('btn-client-start');
       var pingEl = document.getElementById('netplay-ping');
+      var titleEl = document.getElementById('client-game-title');
+      var dpadEl = document.getElementById('client-dpad');
+      var actionsEl = document.getElementById('client-actions');
+      var capsulesEl = document.getElementById('client-capsules');
+      var shouldersEl = document.getElementById('client-shoulders');
+
+      if (titleEl) {
+        titleEl.textContent = (game ? game.title : '2P 联机') + ' · 连接中';
+      }
+
+      var clientSender = Netplay.createClientInputSender(function (btn, pressed) {
+        Netplay.sendInput(btn, pressed);
+      });
+
+      function paintDpadVisual(dirs) {
+        if (!dpadEl) return;
+        var map = {};
+        for (var i = 0; i < dirs.length; i++) map[dirs[i]] = true;
+        var all = ['up', 'down', 'left', 'right'];
+        for (var j = 0; j < all.length; j++) {
+          var el = dpadEl.querySelector('.dpad-' + all[j]);
+          if (el) el.classList.toggle('active', !!map[all[j]]);
+        }
+      }
+
+      function clearAllClientVisuals() {
+        clientSender.releaseAll();
+        paintDpadVisual([]);
+        var activeEls = document.querySelectorAll('#client-stage .active');
+        for (var i = 0; i < activeEls.length; i++) {
+          activeEls[i].classList.remove('active');
+        }
+      }
+
+      function renderClientControls(pad) {
+        var specs = Netplay.buildClientButtonSpecs(pad);
+
+        // 动作区动态渲染（支持 2 键 / 3 键 / 4 键菱形 / 6 键街机）
+        if (actionsEl) {
+          actionsEl.innerHTML = '';
+          actionsEl.className = 'client-actions touch-interactive layout-' + specs.layoutMode;
+          specs.actions.forEach(function (item) {
+            var btn = document.createElement('div');
+            btn.className = 'act-btn slot-' + item.slot;
+            btn.setAttribute('data-btn', item.id);
+            var mainSpan = document.createElement('span');
+            mainSpan.textContent = item.label;
+            btn.appendChild(mainSpan);
+            if (item.sub && item.sub !== item.label) {
+              var subSmall = document.createElement('small');
+              subSmall.textContent = item.sub;
+              btn.appendChild(subSmall);
+            }
+            actionsEl.appendChild(btn);
+          });
+        }
+
+        // 功能胶囊区（选择/开始 或 投币/开始）
+        if (capsulesEl) {
+          capsulesEl.innerHTML = '';
+          specs.capsules.forEach(function (cap) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'cap-btn';
+            btn.setAttribute('data-btn', cap.id);
+            btn.textContent = cap.label;
+            capsulesEl.appendChild(btn);
+          });
+        }
+
+        // 肩键区（L / R，如 SFC / GBA）
+        if (shouldersEl) {
+          shouldersEl.innerHTML = '';
+          if (specs.shoulders && specs.shoulders.length) {
+            shouldersEl.style.display = 'flex';
+            specs.shoulders.forEach(function (sh) {
+              var btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'shoulder-btn';
+              btn.setAttribute('data-btn', sh.id);
+              btn.textContent = sh.label;
+              shouldersEl.appendChild(btn);
+            });
+          } else {
+            shouldersEl.style.display = 'none';
+          }
+        }
+      }
+
+      // 初始先按游戏类别渲染兜底按键，连上房主后再按 welcome.pad 精确同步
+      var fallbackPad = (game && game.category === 'arcade')
+        ? {
+            layout: 'diamond',
+            stick: true,
+            actions: [
+              { id: 'y', label: '攻击', key: 'Y' },
+              { id: 'b', label: '跳跃', key: 'B' },
+              { id: 'a', label: '必杀', key: 'A' },
+              { id: 'x', label: '连发', key: 'X' }
+            ],
+            capsules: [{ id: 'coin', label: '投币' }, { id: 'start', label: '开始' }]
+          }
+        : null;
+      renderClientControls(fallbackPad);
+
+      // D-Pad 8 方向连续滑动触控（Pointer Events + setPointerCapture）
+      if (dpadEl) {
+        var dpadPointerId = null;
+        function updateDpadFromEvent(e) {
+          var rect = dpadEl.getBoundingClientRect();
+          if (!rect.width || !rect.height) return;
+          var cx = rect.left + rect.width / 2;
+          var cy = rect.top + rect.height / 2;
+          var nx = (e.clientX - cx) / (rect.width / 2);
+          var ny = (e.clientY - cy) / (rect.height / 2);
+          var dirs = Netplay.resolveDpadDirections(nx, ny, 0.24);
+          clientSender.setDpadDirs(dirs);
+          paintDpadVisual(dirs);
+        }
+        function releaseDpad(e) {
+          if (dpadPointerId == null || e.pointerId !== dpadPointerId) return;
+          dpadPointerId = null;
+          clientSender.setDpadDirs([]);
+          paintDpadVisual([]);
+        }
+        dpadEl.addEventListener('pointerdown', function (e) {
+          e.preventDefault();
+          if (dpadPointerId != null && dpadPointerId !== e.pointerId) return;
+          dpadPointerId = e.pointerId;
+          try { dpadEl.setPointerCapture(e.pointerId); } catch (_) {}
+          updateDpadFromEvent(e);
+        });
+        dpadEl.addEventListener('pointermove', function (e) {
+          if (dpadPointerId == null || e.pointerId !== dpadPointerId) return;
+          e.preventDefault();
+          updateDpadFromEvent(e);
+        });
+        dpadEl.addEventListener('pointerup', releaseDpad);
+        dpadEl.addEventListener('pointercancel', releaseDpad);
+        dpadEl.addEventListener('lostpointercapture', releaseDpad);
+      }
+
+      // 动作键 / 胶囊键 / 肩键多指独立追踪（Pointer Events 委托）
+      var pointerTargetMap = {};
+      function bindButtonContainer(container) {
+        if (!container) return;
+        container.addEventListener('pointerdown', function (e) {
+          var btnEl = e.target && e.target.closest ? e.target.closest('[data-btn]') : null;
+          if (!btnEl) return;
+          e.preventDefault();
+          var btnId = btnEl.getAttribute('data-btn');
+          if (!btnId) return;
+          pointerTargetMap[String(e.pointerId)] = btnEl;
+          btnEl.classList.add('active');
+          clientSender.pressButton(e.pointerId, btnId);
+          try { btnEl.setPointerCapture(e.pointerId); } catch (_) {}
+        });
+        function up(e) {
+          var pid = String(e.pointerId);
+          var btnEl = pointerTargetMap[pid];
+          if (btnEl) {
+            delete pointerTargetMap[pid];
+            clientSender.releaseButton(e.pointerId);
+            // 仅当没有其他手指还按在同一元素上时移除激活态
+            var stillHeld = false;
+            var keys = Object.keys(pointerTargetMap);
+            for (var i = 0; i < keys.length; i++) {
+              if (pointerTargetMap[keys[i]] === btnEl) { stillHeld = true; break; }
+            }
+            if (!stillHeld) btnEl.classList.remove('active');
+          } else {
+            clientSender.releaseButton(e.pointerId);
+          }
+        }
+        container.addEventListener('pointerup', up);
+        container.addEventListener('pointercancel', up);
+        container.addEventListener('lostpointercapture', up);
+      }
+      bindButtonContainer(actionsEl);
+      bindButtonContainer(capsulesEl);
+      bindButtonContainer(shouldersEl);
+
+      window.addEventListener('blur', clearAllClientVisuals);
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) clearAllClientVisuals();
+      });
+
+      window.WEB_NETPLAY_CLIENT = {
+        renderControls: renderClientControls,
+        sender: clientSender,
+        clearAll: clearAllClientVisuals
+      };
 
       function activateVideo() {
         if (clientVideo) {
@@ -520,31 +717,23 @@
         btnClientStart.addEventListener('touchend', activateVideo);
       }
 
-      // 绑定手机端虚拟触摸按键
-      var touchButtons = document.querySelectorAll('#client-stage [data-btn]');
-      touchButtons.forEach(function (btnEl) {
-        var btnId = btnEl.getAttribute('data-btn');
-        function press(e) {
-          if (e) e.preventDefault();
-          btnEl.classList.add('active');
-          Netplay.sendInput(btnId, true);
-        }
-        function release(e) {
-          if (e) e.preventDefault();
-          btnEl.classList.remove('active');
-          Netplay.sendInput(btnId, false);
-        }
-        btnEl.addEventListener('touchstart', press, { passive: false });
-        btnEl.addEventListener('touchend', release, { passive: false });
-        btnEl.addEventListener('touchcancel', release, { passive: false });
-        btnEl.addEventListener('mousedown', press);
-        btnEl.addEventListener('mouseup', release);
-      });
-
       // 启动 Client 模式连接房主
       Netplay.startClient({
         onConnected: function () {
           if (pingEl) pingEl.textContent = '已连接';
+          if (titleEl) {
+            titleEl.textContent = (game ? game.title : '2P 联机') + ' · 已连接';
+          }
+        },
+        onWelcome: function (data) {
+          if (titleEl) {
+            var gTitle = (data && data.title) || (game && game.title) || '2P 联机';
+            titleEl.textContent = gTitle + ' · 已连接';
+          }
+          if (data && data.pad) {
+            clearAllClientVisuals();
+            renderClientControls(data.pad);
+          }
         },
         onStream: function (remoteStream) {
           if (clientVideo) {
@@ -553,6 +742,8 @@
           }
         },
         onDisconnected: function () {
+          clearAllClientVisuals();
+          if (pingEl) pingEl.textContent = '已断开';
           alert('与 1P 房主的连接已断开');
         }
       });
@@ -597,20 +788,36 @@
       ipRow.style.display = 'none'; // 线上生产环境直接隐藏局域网配置输入框
     }
 
+    function captureHostStream() {
+      var src = coreRef && typeof coreRef.source === 'function' ? coreRef.source() : null;
+      var stream = null;
+      if (src && typeof src.captureStream === 'function') {
+        try {
+          var s = src.captureStream(60);
+          if (s && s.getVideoTracks && s.getVideoTracks().length > 0) {
+            stream = s;
+          }
+        } catch (_) {}
+      }
+      if (!stream && fullCanvas && fullCanvas.captureStream) {
+        stream = fullCanvas.captureStream(60);
+      }
+      if (stream && coreRef && typeof coreRef.connectRecordingAudio === 'function') {
+        var track = coreRef.connectRecordingAudio();
+        if (track && stream.addTrack) stream.addTrack(track);
+      }
+      return stream;
+    }
+
     function openModal() {
+      ensureAudioActive();
       modal.classList.add('show');
       if (!Netplay.peer) {
         statusText.textContent = '正在创建联机房间...';
         Netplay.startHost({
-          getStream: function () {
-            if (!fullCanvas || !fullCanvas.captureStream) return null;
-            var stream = fullCanvas.captureStream(60);
-            if (coreRef && typeof coreRef.connectRecordingAudio === 'function') {
-              var track = coreRef.connectRecordingAudio();
-              if (track && stream.addTrack) stream.addTrack(track);
-            }
-            return stream;
-          },
+          pad: coreRef && coreRef.pad ? coreRef.pad : null,
+          gameTitle: game ? game.title : '',
+          getStream: captureHostStream,
           onReady: function (roomId) {
             if (roomBadge) roomBadge.textContent = roomId;
             statusText.textContent = '等待 2P 手机扫码连接...';
@@ -618,18 +825,29 @@
             renderQr(joinUrl);
           },
           onClientJoin: function () {
+            if (bridge) bridge.releaseAll(2);
             statusText.textContent = '2P 手机玩家已就绪！';
             statusText.style.color = '#4ade80';
-            toast('2P 手机玩家已加入对战！请按 Shift 选 2 PLAYERS 开始');
+            var km = bridge ? bridge.getKeymap() : null;
+            var isArcade = !!(km && km.map && km.map.coin);
+            toast(isArcade
+              ? '2P 手机玩家已加入！请在画面中投币并按 2P 开始'
+              : '2P 手机玩家已加入！请在标题画面按「选择」切换 2P 模式并开始');
           },
           onClientLeave: function () {
+            if (bridge) bridge.releaseAll(2);
             statusText.textContent = '2P 玩家已断开连接';
             statusText.style.color = '#f87171';
-            toast('2P 手机玩家已离开');
+            toast('2P 手机玩家已离开，已释放 2P 按键');
           },
           onInput: function (btn, pressed, player) {
+            var p = player || 2;
+            if (bridge) {
+              var ok = pressed ? bridge.press(btn, p) : bridge.release(btn, !isCapsuleBtnId(btn), p);
+              if (ok) return;
+            }
             if (coreRef && typeof coreRef.setButton === 'function') {
-              coreRef.setButton(btn, pressed, player || 2);
+              coreRef.setButton(btn, pressed, p);
             }
           }
         });
@@ -671,6 +889,10 @@
         }
       });
     }
+
+    window.addEventListener('beforeunload', function () {
+      if (Netplay.peer) Netplay.disconnect();
+    });
   }
 
   // 如果是 Client 模式，直接初始化，不用加载本地 iframe

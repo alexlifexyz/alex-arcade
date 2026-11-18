@@ -348,16 +348,19 @@
 
   const ACTION_IDS = { y: 1, b: 1, a: 1, x: 1, attack: 1, jump: 1, kill: 1, burst: 1 };
 
-  function setButton(btnId, isPressed) {
-    const norm = String(btnId || "").toLowerCase().replace(/^btn-/, "");
-    btnState[norm] = !!isPressed;
+  function setButton(btnId, isPressed, player) {
+    const isP2 = (player === 2 || String(btnId || "").startsWith("p2_"));
+    const norm = String(btnId || "").toLowerCase().replace(/^btn-/, "").replace(/^p[12]_/, "");
+    const targetState = isP2 ? btnStateP2 : btnState;
+    const targetHold = isP2 ? holdBufferP2 : holdBuffer;
+    targetState[norm] = !!isPressed;
     if (isPressed) {
-      holdBuffer[norm] = 8;
+      targetHold[norm] = 8;
     }
     // 动作键只送攻击/跳跃电平，绝不顺带拉起 START。
     if (ACTION_IDS[norm]) {
-      btnState.start = false;
-      holdBuffer.start = 0;
+      targetState.start = false;
+      targetHold.start = 0;
     }
   }
 

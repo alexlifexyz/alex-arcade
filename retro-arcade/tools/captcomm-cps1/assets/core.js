@@ -97,7 +97,22 @@
     }
     if ((mask & 3) === 3) mask &= ~3;
     if ((mask & 12) === 12) mask &= ~12;
-    return mask;
+
+    let mask2 = 0;
+    for (const k in btnStateP2) {
+      if (k === "x" || k === "burst") continue;
+      if ((btnStateP2[k] || (holdBufferP2[k] && holdBufferP2[k] > 0)) && BTN_MAP[k]) {
+        mask2 |= BTN_MAP[k];
+      }
+    }
+    const turboOn2 = !!(btnStateP2.x || btnStateP2.burst || (holdBufferP2.x > 0) || (holdBufferP2.burst > 0));
+    if (turboOn2 && ((turboCounter >> 1) & 1) === 0) {
+      mask2 |= BTN_ATTACK;
+    }
+    if ((mask2 & 3) === 3) mask2 &= ~3;
+    if ((mask2 & 12) === 12) mask2 &= ~12;
+
+    return (mask & 0xFFFF00FF) | ((mask2 & 0xFF) << 8);
   }
 
   const KEY_MAP = {
@@ -114,11 +129,14 @@
     49: "start"
   };
 
-  function setButton(btnId, isPressed) {
-    const norm = String(btnId || "").toLowerCase().replace(/^btn-/, "");
-    btnState[norm] = !!isPressed;
+  function setButton(btnId, isPressed, player) {
+    const isP2 = (player === 2 || String(btnId || "").startsWith("p2_"));
+    const norm = String(btnId || "").toLowerCase().replace(/^btn-/, "").replace(/^p[12]_/, "");
+    const targetState = isP2 ? btnStateP2 : btnState;
+    const targetHold = isP2 ? holdBufferP2 : holdBuffer;
+    targetState[norm] = !!isPressed;
     if (isPressed && (norm === "start" || norm === "coin" || norm === "select")) {
-      holdBuffer[norm] = 8;
+      targetHold[norm] = 8;
     }
   }
 
@@ -492,6 +510,9 @@
 
         for (const k in holdBuffer) {
           if (holdBuffer[k] > 0) holdBuffer[k]--;
+        }
+        for (const k in holdBufferP2) {
+          if (holdBufferP2[k] > 0) holdBufferP2[k]--;
         }
         turboCounter++;
 

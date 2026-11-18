@@ -396,12 +396,41 @@
       z-index: 10;
     }
     .touch-interactive { pointer-events: auto; }
+    .client-shoulders {
+      position: absolute;
+      top: 52px;
+      left: 16px;
+      right: 16px;
+      display: none;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+    .shoulder-btn {
+      pointer-events: auto;
+      min-width: 68px;
+      height: 28px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .14);
+      border: 1px solid rgba(255, 255, 255, .28);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      touch-action: none;
+    }
+    .shoulder-btn:active, .shoulder-btn.active {
+      background: rgba(0, 210, 255, .55);
+      transform: scale(.95);
+    }
     .client-dpad {
       position: absolute;
-      left: 20px;
+      left: 18px;
       bottom: 24px;
-      width: 150px;
-      height: 150px;
+      width: 152px;
+      height: 152px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .04);
+      border: 1px solid rgba(255, 255, 255, .12);
+      touch-action: none;
     }
     .dpad-btn {
       position: absolute;
@@ -416,23 +445,39 @@
       color: #fff;
       font-size: 18px;
       font-weight: 700;
-      touch-action: none;
+      pointer-events: none;
+      transition: background .06s, transform .06s;
     }
-    .dpad-btn:active, .dpad-btn.active {
-      background: rgba(0, 210, 255, .55);
-      transform: scale(.95);
+    .dpad-btn.active {
+      background: rgba(0, 210, 255, .58);
+      border-color: rgba(0, 210, 255, .95);
+      transform: scale(.94);
     }
-    .dpad-up { left: 51px; top: 0; }
-    .dpad-down { left: 51px; bottom: 0; }
-    .dpad-left { left: 0; top: 51px; }
-    .dpad-right { right: 0; top: 51px; }
+    .dpad-up { left: 52px; top: 4px; }
+    .dpad-down { left: 52px; bottom: 4px; }
+    .dpad-left { left: 4px; top: 52px; }
+    .dpad-right { right: 4px; top: 52px; }
 
     .client-actions {
       position: absolute;
-      right: 20px;
+      right: 18px;
       bottom: 24px;
-      width: 140px;
-      height: 140px;
+      width: 146px;
+      height: 146px;
+      touch-action: none;
+    }
+    .client-actions.layout-diamond { width: 168px; height: 168px; bottom: 18px; }
+    .client-actions.layout-three { width: 158px; height: 158px; bottom: 20px; }
+    .client-actions.layout-six {
+      width: 186px;
+      height: 122px;
+      bottom: 26px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 8px;
+      align-items: center;
+      justify-items: center;
     }
     .act-btn {
       position: absolute;
@@ -447,37 +492,78 @@
       align-items: center;
       justify-content: center;
       touch-action: none;
+      cursor: pointer;
     }
     .act-btn:active, .act-btn.active {
-      background: rgba(239, 68, 68, .6);
-      transform: scale(.94);
+      background: rgba(239, 68, 68, .62);
+      transform: scale(.93);
     }
-    .act-b { left: 0; bottom: 10px; border-color: #38bdf8; }
-    .act-b:active, .act-b.active { background: rgba(56, 189, 248, .6); }
-    .act-a { right: 0; top: 10px; border-color: #ef4444; }
-    .act-btn span { font-size: 18px; font-weight: 800; line-height: 1; }
-    .act-btn small { font-size: 9px; opacity: .8; margin-top: 2px; }
+    .layout-two .slot-left { left: 4px; bottom: 10px; border-color: #38bdf8; }
+    .layout-two .slot-left.active { background: rgba(56, 189, 248, .62); }
+    .layout-two .slot-right { right: 4px; top: 10px; border-color: #ef4444; }
+
+    .layout-three .act-btn { width: 54px; height: 54px; }
+    .layout-three .slot-bottom { left: 6px; bottom: 6px; border-color: #38bdf8; }
+    .layout-three .slot-right { right: 6px; top: 52px; border-color: #ef4444; }
+    .layout-three .slot-top { right: 16px; top: 2px; border-color: #22c55e; }
+
+    .layout-diamond .act-btn { width: 52px; height: 52px; }
+    .layout-diamond .slot-bottom { left: 58px; bottom: 2px; border-color: #38bdf8; }
+    .layout-diamond .slot-right { right: 2px; top: 58px; border-color: #ef4444; }
+    .layout-diamond .slot-top { left: 58px; top: 2px; border-color: #22c55e; }
+    .layout-diamond .slot-left { left: 2px; top: 58px; border-color: #facc15; }
+    .layout-diamond .slot-bottom.active { background: rgba(56, 189, 248, .62); }
+    .layout-diamond .slot-top.active { background: rgba(34, 197, 94, .62); }
+    .layout-diamond .slot-left.active { background: rgba(250, 204, 21, .62); color: #111; }
+
+    .layout-six .act-btn {
+      position: static;
+      width: 52px;
+      height: 52px;
+    }
+    .act-btn span { font-size: 14px; font-weight: 800; line-height: 1.05; }
+    .layout-two .act-btn span { font-size: 18px; }
+    .act-btn small { font-size: 9px; opacity: .82; margin-top: 2px; }
 
     .client-capsules {
       position: absolute;
       left: 50%;
-      bottom: 24px;
+      bottom: 22px;
       transform: translateX(-50%);
       display: flex;
-      gap: 12px;
+      gap: 10px;
     }
     .cap-btn {
-      width: 60px;
-      height: 28px;
+      min-width: 60px;
+      height: 30px;
+      padding: 0 12px;
       border-radius: 999px;
       background: rgba(255, 255, 255, .15);
-      border: 1px solid rgba(255, 255, 255, .25);
+      border: 1px solid rgba(255, 255, 255, .28);
       color: #fff;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 600;
       touch-action: none;
     }
-    .cap-btn:active { background: rgba(0, 210, 255, .5); }
+    .cap-btn:active, .cap-btn.active { background: rgba(0, 210, 255, .55); }
+
+    @media (max-width: 440px) {
+      .client-dpad { left: 10px; bottom: 56px; width: 136px; height: 136px; }
+      .dpad-btn { width: 42px; height: 42px; font-size: 16px; }
+      .dpad-up { left: 47px; top: 3px; }
+      .dpad-down { left: 47px; bottom: 3px; }
+      .dpad-left { left: 3px; top: 47px; }
+      .dpad-right { right: 3px; top: 47px; }
+      .client-actions { right: 10px; bottom: 56px; }
+      .client-actions.layout-diamond { width: 150px; height: 150px; bottom: 50px; }
+      .layout-diamond .act-btn { width: 46px; height: 46px; }
+      .layout-diamond .slot-bottom { left: 52px; }
+      .layout-diamond .slot-top { left: 52px; }
+      .layout-diamond .slot-right, .layout-diamond .slot-left { top: 52px; }
+      .client-actions.layout-six { width: 164px; height: 108px; bottom: 58px; gap: 6px; }
+      .layout-six .act-btn { width: 46px; height: 46px; }
+      .client-capsules { bottom: 14px; }
+    }
 
     .client-audio-prompt {
       position: absolute;
@@ -538,8 +624,8 @@
   <div class="netplay-modal" id="netplay-modal">
     <div class="netplay-card">
       <h3>WebRTC 双人跨端联机</h3>
-      <p>手机与电脑在同一 WiFi 或公网下，扫码即可作为 2P 绿色坦克加入对战！</p>
-      <div class="room-badge" id="netplay-room-badge">TANK-....</div>
+      <p>手机与电脑在同一 WiFi 或公网下，扫码即可作为 2P 加入双人联机对战！</p>
+      <div class="room-badge" id="netplay-room-badge">PLAY-....</div>
       <div>
         <div class="qr-container" id="netplay-qrcode"></div>
       </div>
@@ -561,41 +647,30 @@
     <video id="client-video" autoplay playsinline webkit-playsinline></video>
     <div class="client-header">
       <div class="client-pill">
-        <span class="dot"></span>2P 绿色坦克已连接
+        <span class="dot"></span><span id="client-game-title">2P 连接中</span>
       </div>
       <div class="client-pill" id="netplay-ping">--ms</div>
     </div>
-    <!-- 触控按键层 -->
+    <!-- 触控按键层（根据房主游戏 pad 动态生成） -->
     <div class="client-controls">
-      <!-- 左侧 D-Pad -->
+      <div class="client-shoulders" id="client-shoulders"></div>
+      <!-- 左侧 D-Pad（支持 8 方向滑动切换） -->
       <div class="client-dpad touch-interactive" id="client-dpad">
-        <div class="dpad-btn dpad-up" data-btn="up">▲</div>
-        <div class="dpad-btn dpad-down" data-btn="down">▼</div>
-        <div class="dpad-btn dpad-left" data-btn="left">◀</div>
-        <div class="dpad-btn dpad-right" data-btn="right">▶</div>
+        <div class="dpad-btn dpad-up">▲</div>
+        <div class="dpad-btn dpad-down">▼</div>
+        <div class="dpad-btn dpad-left">◀</div>
+        <div class="dpad-btn dpad-right">▶</div>
       </div>
-      <!-- 中间功能键 -->
-      <div class="client-capsules touch-interactive">
-        <button type="button" class="cap-btn" data-btn="select">选择</button>
-        <button type="button" class="cap-btn" data-btn="start">开始</button>
-      </div>
-      <!-- 右侧动作键 -->
-      <div class="client-actions touch-interactive" id="client-actions">
-        <div class="act-btn act-b" data-btn="b">
-          <span>B</span>
-          <small>连射</small>
-        </div>
-        <div class="act-btn act-a" data-btn="a">
-          <span>A</span>
-          <small>单发</small>
-        </div>
-      </div>
+      <!-- 中间功能键（动态生成选择/投币与开始） -->
+      <div class="client-capsules touch-interactive" id="client-capsules"></div>
+      <!-- 右侧动作键（动态生成 2/3/4/6 键布局） -->
+      <div class="client-actions touch-interactive" id="client-actions"></div>
     </div>
     <!-- 移动端音频破冰遮罩 -->
     <div class="client-audio-prompt" id="client-audio-prompt">
       <h3 style="color:#fff; font-size: 20px; margin-bottom: 8px;">准备就绪！</h3>
-      <p style="color:#94a3b8; font-size: 14px;">已连接到 1P 房主，轻触屏幕开启战斗与音频</p>
-      <button type="button" class="client-audio-btn" id="btn-client-start">加入战斗</button>
+      <p style="color:#94a3b8; font-size: 14px;">已连接到 1P 房主，轻触屏幕开启联机画面与音频</p>
+      <button type="button" class="client-audio-btn" id="btn-client-start">加入游戏</button>
     </div>
   </div>
 
