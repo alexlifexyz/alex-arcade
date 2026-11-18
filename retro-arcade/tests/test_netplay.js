@@ -319,6 +319,37 @@ console.log('--- 测试 7: Host 主动双轨推流、reliable:true、重连防�
             Netplay.disconnect();
             delete global.Peer;
             console.log('PASS: 房主主动双轨推流、有序通道、心跳对账与重连保护全部验证通过');
+
+            console.log('--- 测试 8: 信令 WebSocket 保底中继 (sendWsRelay / installWsRelay) ---');
+            let receivedRelay = null;
+            let receivedSrc = null;
+            const fakePeerB = {
+              _handleMessage(msg) {
+                throw new Error('dc_relay 消息应被拦截处理，不应透传到原生 _handleMessage');
+              }
+            };
+            Netplay.installWsRelay(fakePeerB, (data, src) => {
+              receivedRelay = data;
+              receivedSrc = src;
+            });
+            const fakePeerA = {
+              socket: {
+                send(packet) {
+                  fakePeerB._handleMessage(Object.assign({ src: 'CLIENT-WS-1' }, packet));
+                }
+              }
+            };
+            const ok = Netplay.sendWsRelay(fakePeerA, 'PLAY-HOST', {
+              type: 'frame',
+              d: 'data:image/webp;base64,AAAA',
+              w: 256,
+              h: 240
+            });
+            assert.strictEqual(ok, true);
+            assert.strictEqual(receivedSrc, 'CLIENT-WS-1');
+            assert.strictEqual(receivedRelay.type, 'frame');
+            assert.strictEqual(receivedRelay.w, 256);
+            console.log('PASS: 信令 WebSocket 帧与指令保底中继验证通过');
             console.log('ALL NETPLAY TESTS PASSED!');
           }, 30);
         });

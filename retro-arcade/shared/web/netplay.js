@@ -1,8 +1,10 @@
 // shared/web/netplay.js
-// 像素街机馆 · WebRTC 双人跨端联机模块 (Remote Play 远程同乐模式)
+// 像素街机馆 · WebRTC + WebSocket 双擎跨端联机模块 (Remote Play 远程同乐模式)
 // 适配 PC 端房主 (1P) 与 手机端访客 (2P) 扫码极速同屏对战。
-// 由房主端主动发起音视频 Offer 推流（确保 video + audio 双轨完整送达手机端），
-// 采用有序可靠 DataChannel + 周期性按住状态对账，彻底杜绝乱序卡键与丢包。
+// 1. 优先尝试 WebRTC 原生音视频流 + 有序可靠 DataChannel；
+// 2. 当遇到 Clash 代理 / 4G-5G 对称 NAT / 微信容器阻断 UDP 导致 ICE 卡 checking 时，
+//    毫秒级无感启用 PeerJS 信令 WebSocket 保底中继通道（同步推送实时画面帧 + 按键 + 心跳对账），
+//    彻底根治手机扫码后黑屏、连不上或按键无响应。
 (function (root) {
   'use strict';
 
@@ -38,18 +40,28 @@
     ['up', 'right']
   ];
 
+  var ICE_SERVERS = [
+    { urls: 'stun:stun.cloudflare.com:3478' },
+    { urls: 'stun:stun.miwifi.com:3478' },
+    { urls: 'stun:stun.qq.com:3478' },
+    { urls: 'stun:stun.l.google.com:19302' }
+  ];
+
   var Netplay = {
     peer: null,
     conn: null,
     call: null,
     roomId: null,
+    activeClientPeerId: null,
     gameId: urlGameParam || 'tank-nes',
     isHost: false,
     isClient: false,
     latencyMs: 0,
     mediaStream: null,
     pingTimer: null,
+    helloRetryTimer: null,
     streamRetryTimer: null,
+    frameStreamTimer: null,
     onInputCallback: null,
     onStatusCallback: null
   };
@@ -315,7 +327,66 @@
     };
   }
 
-  // 5. 检测当前是否处于访客客户端模式
+  // 5. 信令 WebSocket 保底中继层（当 WebRTC UDP 被 Clash 代理 / 对称 NAT 拦截时毫秒级接管）
+  function sendWsRelay(peer, dstPeerId, data) {
+    if (!peer || !dstPeerId || !data) return false;
+    var sock = peer.socket || peer._socket;
+    if (!sock || typeof sock.send !== 'function') return false;
+    try {
+      sock.send({
+        type: 'CANDIDATE',
+        dst: dstPeerId,
+        payload: {
+          candidate: {
+            candidate: 'relay:' + JSON.stringify(data),
+            sdpMid: '0',
+            sdpMLineIndex: 0
+          },
+          type: 'data',
+          connectionId: 'dc_relay'
+        }
+      });
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function installWsRelay(peer, onRelayMessage) {
+    if (!peer || peer._wsRelayInstalled) return;
+    peer._wsRelayInstalled = true;
+
+    function extractAndDispatch(msg) {
+      if (!msg || msg.type !== 'CANDIDATE' || !msg.payload || msg.payload.connectionId !== 'dc_relay') {
+        return false;
+      }
+      var candObj = msg.payload.candidate;
+      var raw = candObj && typeof candObj.candidate === 'string' ? candObj.candidate : '';
+      if (raw.indexOf('relay:') !== 0) return false;
+      try {
+        var parsed = JSON.parse(raw.slice(6));
+        onRelayMessage(parsed, msg.src);
+      } catch (_) {}
+      return true;
+    }
+
+    if (typeof peer._handleMessage === 'function') {
+      var origHandle = peer._handleMessage.bind(peer);
+      peer._handleMessage = function (msg) {
+        if (extractAndDispatch(msg)) return;
+        return origHandle(msg);
+      };
+    } else {
+      var sock = peer.socket || peer._socket;
+      if (sock && typeof sock.on === 'function') {
+        sock.on('message', function (msg) {
+          extractAndDispatch(msg);
+        });
+      }
+    }
+  }
+
+  // 检测当前是否处于访客客户端模式
   Netplay.isClientMode = function () {
     return !!roomParam;
   };
@@ -325,13 +396,21 @@
       clearInterval(Netplay.pingTimer);
       Netplay.pingTimer = null;
     }
+    if (Netplay.helloRetryTimer) {
+      clearInterval(Netplay.helloRetryTimer);
+      Netplay.helloRetryTimer = null;
+    }
     if (Netplay.streamRetryTimer) {
       clearTimeout(Netplay.streamRetryTimer);
       Netplay.streamRetryTimer = null;
     }
+    if (Netplay.frameStreamTimer) {
+      clearInterval(Netplay.frameStreamTimer);
+      Netplay.frameStreamTimer = null;
+    }
   }
 
-  // 6. 房主模式 (Host)：初始化 Peer、等待 2P 连接并主动向 2P 推送音视频流
+  // 6. 房主模式 (Host)：初始化 Peer、等待 2P 连接，同时支持 WebRTC 推流与 WebSocket 实时帧保底推送
   Netplay.startHost = function (opts) {
     opts = opts || {};
     var onReady = opts.onReady || function () {};
@@ -340,6 +419,7 @@
     var onInput = opts.onInput || function () {};
     var onSyncHeld = opts.onSyncHeld || function () {};
     var getStream = opts.getStream || null;
+    var getSourceCanvas = opts.getSourceCanvas || null;
 
     if (opts.gameId) Netplay.gameId = String(opts.gameId);
 
@@ -356,6 +436,12 @@
     Netplay.isHost = true;
     Netplay.isClient = false;
     Netplay.roomId = generateRoomId();
+    Netplay.activeClientPeerId = null;
+
+    var clientWebrtcVideoOk = false;
+    var relayCanvas = null;
+    var relayCtx = null;
+    var useWebp = true;
 
     if (typeof Peer === 'undefined') {
       console.error('PeerJS 库未加载，无法启动联机');
@@ -365,20 +451,89 @@
     try {
       Netplay.peer = new Peer(Netplay.roomId, {
         debug: 1,
-        config: {
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun.cloudflare.com:3478' }
-          ]
-        }
+        config: { iceServers: ICE_SERVERS }
       });
     } catch (e) {
       console.error('Peer 初始化异常:', e);
       return;
     }
 
+    function sendToClient(peerId, payload) {
+      var targetId = peerId || Netplay.activeClientPeerId || (Netplay.conn && Netplay.conn.peer);
+      var sentDc = false;
+      if (Netplay.conn && Netplay.conn.open && (!targetId || Netplay.conn.peer === targetId)) {
+        try {
+          Netplay.conn.send(payload);
+          sentDc = true;
+        } catch (_) {}
+      }
+      if (!sentDc && targetId) {
+        sendWsRelay(Netplay.peer, targetId, payload);
+      }
+    }
+
+    function startFrameStreamLoop() {
+      if (Netplay.frameStreamTimer) clearInterval(Netplay.frameStreamTimer);
+      if (!getSourceCanvas || typeof document === 'undefined') return;
+
+      Netplay.frameStreamTimer = setInterval(function () {
+        if (!Netplay.activeClientPeerId || clientWebrtcVideoOk) return;
+        // 检查底层 WebSocket 发送缓冲区，避免弱网积压延迟
+        try {
+          var rawWs = Netplay.peer && Netplay.peer.socket && Netplay.peer.socket._socket;
+          if (rawWs && rawWs.bufferedAmount > 49152) return;
+        } catch (_) {}
+
+        var src = null;
+        try { src = getSourceCanvas(); } catch (_) { src = null; }
+        if (!src || !src.width || !src.height) return;
+
+        try {
+          var w = Math.min(256, src.width);
+          var h = Math.min(240, src.height);
+          if (!relayCanvas) {
+            relayCanvas = document.createElement('canvas');
+            relayCtx = relayCanvas.getContext('2d', { alpha: false });
+          }
+          if (relayCanvas.width !== w || relayCanvas.height !== h) {
+            relayCanvas.width = w;
+            relayCanvas.height = h;
+            if (relayCtx) relayCtx.imageSmoothingEnabled = false;
+          }
+          relayCtx.drawImage(src, 0, 0, w, h);
+          var dataUrl = '';
+          if (useWebp) {
+            dataUrl = relayCanvas.toDataURL('image/webp', 0.52);
+            if (dataUrl.indexOf('data:image/webp') !== 0) {
+              useWebp = false;
+              dataUrl = relayCanvas.toDataURL('image/jpeg', 0.55);
+            }
+          } else {
+            dataUrl = relayCanvas.toDataURL('image/jpeg', 0.55);
+          }
+          if (dataUrl) {
+            sendToClient(Netplay.activeClientPeerId, {
+              type: 'frame',
+              d: dataUrl,
+              w: src.width,
+              h: src.height,
+              t: Date.now()
+            });
+          }
+        } catch (_) {}
+      }, 72);
+    }
+
     function pushStreamToClient(clientPeerId, isAudioUpgrade) {
       if (!Netplay.peer || !clientPeerId || !getStream) return;
+      // 若当前已有正在握手或已连通的通话且不是音频升级，不重复关闭重建，避免打断 ICE
+      if (Netplay.call && Netplay.call.peer === clientPeerId && !isAudioUpgrade) {
+        var pc = Netplay.call.peerConnection;
+        var ice = pc && pc.iceConnectionState;
+        if (ice === 'checking' || ice === 'connected' || ice === 'completed') {
+          return;
+        }
+      }
       var stream = getStream();
       if (!stream) return;
 
@@ -397,24 +552,53 @@
           console.warn('房主推流通话异常:', err);
         });
       }
+    }
 
-      // 若首次推流时音频节点尚在异步 resume 微任务中，500ms 后检测是否新拿到了音轨并自动升级一次
-      var hasAudio = stream.getAudioTracks && stream.getAudioTracks().length > 0;
-      if (!hasAudio && !isAudioUpgrade) {
-        if (Netplay.streamRetryTimer) clearTimeout(Netplay.streamRetryTimer);
-        Netplay.streamRetryTimer = setTimeout(function () {
-          Netplay.streamRetryTimer = null;
-          if (!Netplay.conn || Netplay.conn.peer !== clientPeerId || !Netplay.conn.open) return;
-          var nextStream = getStream();
-          if (nextStream && nextStream.getAudioTracks && nextStream.getAudioTracks().length > 0) {
-            pushStreamToClient(clientPeerId, true);
-          }
-        }, 500);
+    function handleClientJoinSession(clientPeerId) {
+      if (!clientPeerId) return;
+      var isNewClient = Netplay.activeClientPeerId !== clientPeerId;
+      Netplay.activeClientPeerId = clientPeerId;
+      if (isNewClient) {
+        clientWebrtcVideoOk = false;
+        onClientJoin(clientPeerId);
+        pushStreamToClient(clientPeerId, false);
+        startFrameStreamLoop();
+      }
+      sendToClient(clientPeerId, getWelcomeData());
+    }
+
+    function handleClientPacket(data, srcPeerId) {
+      if (!data || typeof data !== 'object') return;
+      var peerId = srcPeerId || Netplay.activeClientPeerId || (Netplay.conn && Netplay.conn.peer);
+      if (peerId && Netplay.activeClientPeerId !== peerId) {
+        handleClientJoinSession(peerId);
+      }
+      if (data.type === 'input') {
+        onInput(data.btn, data.pressed, 2);
+      } else if (data.type === 'ping') {
+        if (Array.isArray(data.held)) {
+          onSyncHeld(data.held);
+        }
+        sendToClient(peerId, { type: 'pong', clientTime: data.clientTime });
+      } else if (data.type === 'hello') {
+        handleClientJoinSession(peerId);
+      } else if (data.type === 'request-stream') {
+        pushStreamToClient(peerId, false);
+        startFrameStreamLoop();
+      } else if (data.type === 'webrtc-video-ok') {
+        clientWebrtcVideoOk = true;
       }
     }
 
+    installWsRelay(Netplay.peer, function (data, srcPeerId) {
+      handleClientPacket(data, srcPeerId);
+    });
+
     Netplay.peer.on('open', function (id) {
       Netplay.roomId = id;
+      installWsRelay(Netplay.peer, function (data, srcPeerId) {
+        handleClientPacket(data, srcPeerId);
+      });
       onReady(id);
     });
 
@@ -437,40 +621,31 @@
         try { conn.close(); } catch (_) {}
       };
 
+      // 当信令收到客户端连接请求时立即登记并启动保底帧流，无需死等 WebRTC ICE 完成
+      if (conn && conn.peer) {
+        clientActive = true;
+        handleClientJoinSession(conn.peer);
+      }
+
       function notifyLeave() {
         if (detached || !clientActive) return;
         clientActive = false;
         if (Netplay.conn === conn) Netplay.conn = null;
+        if (Netplay.activeClientPeerId === conn.peer) {
+          Netplay.activeClientPeerId = null;
+        }
         onClientLeave();
       }
 
       conn.on('open', function () {
         if (detached) return;
         clientActive = true;
-        onClientJoin(conn.peer);
-        try {
-          conn.send(getWelcomeData());
-        } catch (err) {
-          console.warn('发送欢迎配置失败:', err);
-        }
-        // 由房主主动向 2P 发起携带 video + audio 双轨的媒体呼叫
-        pushStreamToClient(conn.peer, false);
+        handleClientJoinSession(conn.peer);
       });
 
       conn.on('data', function (data) {
-        if (detached || !data || typeof data !== 'object') return;
-        if (data.type === 'input') {
-          onInput(data.btn, data.pressed, 2);
-        } else if (data.type === 'ping') {
-          if (Array.isArray(data.held)) {
-            onSyncHeld(data.held);
-          }
-          try { conn.send({ type: 'pong', clientTime: data.clientTime }); } catch (_) {}
-        } else if (data.type === 'hello') {
-          try { conn.send(getWelcomeData()); } catch (_) {}
-        } else if (data.type === 'request-stream') {
-          pushStreamToClient(conn.peer, false);
-        }
+        if (detached) return;
+        handleClientPacket(data, conn.peer);
       });
 
       conn.on('close', notifyLeave);
@@ -502,10 +677,13 @@
     var onConnected = opts.onConnected || function () {};
     var onWelcome = opts.onWelcome || function () {};
     var onStream = opts.onStream || function () {};
+    var onFrame = opts.onFrame || function () {};
     var onDisconnected = opts.onDisconnected || function () {};
     var getHeldSnapshot = opts.getHeldSnapshot || function () { return []; };
     var targetRoom = roomParam;
     var notifiedDisconnect = false;
+    var isConnected = false;
+    var gotWelcome = false;
     var gotStream = false;
 
     Netplay.isHost = false;
@@ -515,6 +693,52 @@
     if (typeof Peer === 'undefined') {
       if (typeof alert === 'function') alert('联机组件载入中，请稍候重试');
       return;
+    }
+
+    function sendPacket(pkt) {
+      if (Netplay.conn && Netplay.conn.open) {
+        try {
+          Netplay.conn.send(pkt);
+          return true;
+        } catch (_) {}
+      }
+      return sendWsRelay(Netplay.peer, targetRoom, pkt);
+    }
+
+    function markConnected() {
+      if (isConnected) return;
+      isConnected = true;
+      onConnected(targetRoom);
+      if (Netplay.pingTimer) clearInterval(Netplay.pingTimer);
+      Netplay.pingTimer = setInterval(function () {
+        sendPacket({
+          type: 'ping',
+          clientTime: Date.now(),
+          held: getHeldSnapshot()
+        });
+      }, 1200);
+    }
+
+    function handleHostPacket(data) {
+      if (!data || typeof data !== 'object') return;
+      markConnected();
+      if (data.type === 'welcome') {
+        gotWelcome = true;
+        if (Netplay.helloRetryTimer) {
+          clearInterval(Netplay.helloRetryTimer);
+          Netplay.helloRetryTimer = null;
+        }
+        onWelcome(data);
+      } else if (data.type === 'pong') {
+        var rtt = Date.now() - data.clientTime;
+        Netplay.latencyMs = Math.max(1, Math.round(rtt / 2));
+        if (typeof document !== 'undefined') {
+          var latEl = document.getElementById('netplay-ping');
+          if (latEl) latEl.textContent = Netplay.latencyMs + 'ms';
+        }
+      } else if (data.type === 'frame' && data.d) {
+        onFrame(data);
+      }
     }
 
     function notifyDisconnect() {
@@ -527,19 +751,18 @@
     try {
       Netplay.peer = new Peer({
         debug: 1,
-        config: {
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun.cloudflare.com:3478' }
-          ]
-        }
+        config: { iceServers: ICE_SERVERS }
       });
     } catch (e) {
       console.error('Peer Client 初始化异常:', e);
       return;
     }
 
-    // 接听来自房主的主动推流呼叫（房主 Offer 同时包含 video + audio 轨道，手机无需构造假流）
+    installWsRelay(Netplay.peer, function (data) {
+      handleHostPacket(data);
+    });
+
+    // 接听来自房主的主动推流呼叫
     Netplay.peer.on('call', function (call) {
       if (Netplay.call && Netplay.call !== call) {
         try { Netplay.call.close(); } catch (_) {}
@@ -548,6 +771,7 @@
       call.answer();
       call.on('stream', function (remoteStream) {
         gotStream = true;
+        markConnected();
         onStream(remoteStream);
       });
       call.on('error', function (err) {
@@ -556,52 +780,46 @@
     });
 
     Netplay.peer.on('open', function () {
-      // 启用有序可靠通道 (reliable: true -> ordered: true)，彻底杜绝松开包乱序或丢包导致死走
+      installWsRelay(Netplay.peer, function (data) {
+        handleHostPacket(data);
+      });
+
+      // 1) 发起标准 WebRTC DataChannel 连接
       var conn = Netplay.peer.connect(targetRoom, { reliable: true });
       Netplay.conn = conn;
 
+      // 2) 同时通过信令 WebSocket 立即发送 hello 握手，即使 WebRTC ICE 卡在 checking 也能秒连并出画面
+      sendWsRelay(Netplay.peer, targetRoom, { type: 'hello', clientTime: Date.now() });
+      if (Netplay.helloRetryTimer) clearInterval(Netplay.helloRetryTimer);
+      Netplay.helloRetryTimer = setInterval(function () {
+        if (gotWelcome) {
+          clearInterval(Netplay.helloRetryTimer);
+          Netplay.helloRetryTimer = null;
+          return;
+        }
+        sendWsRelay(Netplay.peer, targetRoom, { type: 'hello', clientTime: Date.now() });
+      }, 650);
+
       conn.on('open', function () {
-        onConnected(targetRoom);
-        try { conn.send({ type: 'hello', clientTime: Date.now() }); } catch (_) {}
+        markConnected();
+        sendPacket({ type: 'hello', clientTime: Date.now() });
 
-        clearTimers();
-        Netplay.pingTimer = setInterval(function () {
-          if (conn.open) {
-            conn.send({
-              type: 'ping',
-              clientTime: Date.now(),
-              held: getHeldSnapshot()
-            });
-          }
-        }, 1500);
-
-        // 若 1.8 秒内未收到房主推流呼叫，主动请求一次推流重发
+        if (Netplay.streamRetryTimer) clearTimeout(Netplay.streamRetryTimer);
         Netplay.streamRetryTimer = setTimeout(function () {
           Netplay.streamRetryTimer = null;
-          if (!gotStream && conn.open) {
-            try { conn.send({ type: 'request-stream' }); } catch (_) {}
+          if (!gotStream) {
+            sendPacket({ type: 'request-stream' });
           }
-        }, 1800);
+        }, 2500);
       });
 
       conn.on('data', function (data) {
-        if (!data || typeof data !== 'object') return;
-        if (data.type === 'welcome') {
-          onWelcome(data);
-        } else if (data.type === 'pong') {
-          var rtt = Date.now() - data.clientTime;
-          Netplay.latencyMs = Math.round(rtt / 2);
-          if (typeof document !== 'undefined') {
-            var latEl = document.getElementById('netplay-ping');
-            if (latEl) latEl.textContent = Netplay.latencyMs + 'ms';
-          }
-        }
+        handleHostPacket(data);
       });
 
       conn.on('close', notifyDisconnect);
       conn.on('error', function (err) {
         console.warn('连接房主失败:', err);
-        notifyDisconnect();
       });
     });
 
@@ -610,16 +828,34 @@
     });
   };
 
-  // 8. 访客发送按键至房主
-  Netplay.sendInput = function (btn, pressed) {
+  // 通知房主手机端已成功解码渲染 WebRTC 原生视频流，可停止保底 WebSocket 帧推送
+  Netplay.notifyWebrtcVideoReady = function () {
+    if (!Netplay.isClient) return;
     if (Netplay.conn && Netplay.conn.open) {
-      Netplay.conn.send({
-        type: 'input',
-        btn: btn,
-        pressed: !!pressed,
-        player: 2,
-        t: Date.now()
-      });
+      try { Netplay.conn.send({ type: 'webrtc-video-ok' }); return; } catch (_) {}
+    }
+    if (Netplay.peer && Netplay.roomId) {
+      sendWsRelay(Netplay.peer, Netplay.roomId, { type: 'webrtc-video-ok' });
+    }
+  };
+
+  // 8. 访客发送按键至房主（优先走 DataChannel，未就绪时自动走信令 WebSocket 保底中继）
+  Netplay.sendInput = function (btn, pressed) {
+    var pkt = {
+      type: 'input',
+      btn: btn,
+      pressed: !!pressed,
+      player: 2,
+      t: Date.now()
+    };
+    if (Netplay.conn && Netplay.conn.open) {
+      try {
+        Netplay.conn.send(pkt);
+        return;
+      } catch (_) {}
+    }
+    if (Netplay.peer && Netplay.roomId) {
+      sendWsRelay(Netplay.peer, Netplay.roomId, pkt);
     }
   };
 
@@ -642,6 +878,7 @@
     Netplay.call = null;
     Netplay.conn = null;
     Netplay.peer = null;
+    Netplay.activeClientPeerId = null;
   };
 
   Netplay.generateRoomId = generateRoomId;
@@ -650,6 +887,8 @@
   Netplay.resolveDpadDirections = resolveDpadDirections;
   Netplay.buildClientButtonSpecs = buildClientButtonSpecs;
   Netplay.createClientInputSender = createClientInputSender;
+  Netplay.sendWsRelay = sendWsRelay;
+  Netplay.installWsRelay = installWsRelay;
 
   root.ArcadeNetplay = Netplay;
   if (typeof module !== 'undefined' && module.exports) module.exports = Netplay;

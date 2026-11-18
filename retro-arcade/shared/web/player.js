@@ -1,8 +1,7 @@
 // shared/web/player.js
-// 网页播放器：全屏（纯画面）/ 虚拟键 / 掌机 三种模式共用一页。
-// iframe 同源直达 GGEMU_CORE；输入只经 shared/web/input-bridge.js 的 setButton。
-// 纯画面模式由父页 rAF 绘制 core.source()，帧推进仍由 iframe 内 shell.js 负责（不双 tick）。
-// 键盘沿用各内核自带 KEY_MAP：iframe 始终保持可见并可聚焦，网页层绝不重复绑定 keydown/keyup。
+// 网页播放器：全屏（纯画面）/ 触控手柄（虚拟键）/ 掌机 三种模式共用一页。
+// 自动识别移动端设备：手机打开默认进入适配好的「触控手柄」模式，掌机模式自适应缩放永不重叠。
+// 联机采用 WebRTC 音视频流 + 信令 WebSocket 实时画面帧双擎驱动，彻底杜绝扫码后黑屏。
 (function () {
   'use strict';
 
@@ -10,12 +9,12 @@
   var MODES = ['full', 'virtual', 'deck'];
   var qs = new URLSearchParams(window.location.search);
   var selftest = qs.get('selftest') === '1';
-  // 缩放方式：exact=整数倍（默认，Alex 2026-11-11 拍板）；fit=铺满可用空间（可能非整数倍）；
-  // 1x~4x=指定倍数。内核原画只有 256x240 / 240x160 / 384x224，整数倍在大屏上像素块更整齐。
-  var scaleMode = (qs.get('scale') || 'exact').toLowerCase();
+  var explicitScaleParam = qs.get('scale');
+  var scaleMode = (explicitScaleParam || 'exact').toLowerCase();
   var scaleLogged = false;
 
   var frame = document.getElementById('game-frame');
+  var frameBox = document.getElementById('frame-box');
   var select = document.getElementById('game-select');
   var label = document.getElementById('game-label');
   var notice = document.getElementById('mode-notice');
@@ -29,8 +28,26 @@
   var fullActions = document.getElementById('full-actions');
   var virtualLayer = document.getElementById('virtual-layer');
 
+  function isMobileDevice() {
+    try {
+      if (window.innerWidth > 0 && window.innerWidth <= 768) return true;
+      if (window.matchMedia && window.matchMedia('(max-width: 820px) and (pointer: coarse)').matches) return true;
+      if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '')) return true;
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  var isMobile = isMobileDevice();
+  if (isMobile) {
+    document.documentElement.setAttribute('data-device', 'mobile');
+    document.body.classList.add('is-mobile');
+  }
+
   // 调试信息默认收起；?debug=1 才展开，方便排查
   if (qs.get('debug') === '1') {
+    document.body.classList.add('show-debug');
     var debugPanel = document.getElementById('debug-panel');
     if (debugPanel) debugPanel.open = true;
   }
@@ -49,17 +66,18 @@
 
   var game = findGame(qs.get('game')) || games[0] || null;
   var requestedMode = qs.get('mode');
-  // 默认进全屏（纯画面）；掌机 / 虚拟键由顶栏或 ?mode= 显式切换
-  var mode = MODES.indexOf(requestedMode) >= 0 ? requestedMode : 'full';
+  // 手机端未显式传 mode 时，自动进入专门适配的「触控手柄 (virtual)」模式；PC 端默认进「全屏 (full)」模式
+  var defaultMode = (isMobile && !selftest) ? 'virtual' : 'full';
+  var mode = MODES.indexOf(requestedMode) >= 0 ? requestedMode : defaultMode;
 
   function findGame(id) {
     if (!id) return null;
     for (var i = 0; i < games.length; i++) if (games[i].id === id) return games[i];
     return null;
   }
-  function modeName(m) { return m === 'full' ? '全屏' : m === 'virtual' ? '虚拟键' : '掌机'; }
+  function modeName(m) { return m === 'full' ? '全屏' : m === 'virtual' ? '触控手柄' : '掌机'; }
   function setStatus(text, cls) { statusEl.textContent = text; statusEl.className = cls || ''; }
-  function toast(msg) { notice.textContent = msg; }
+  function toast(msg) { if (notice) notice.textContent = msg; }
   function fail(reason) {
     document.documentElement.setAttribute('data-bridge', 'error');
     setStatus('bridge-error', 'error');
@@ -79,6 +97,47 @@
     window.location.search = '?game=' + encodeURIComponent(select.value) + '&mode=' + mode;
   });
 
+  // 掌机模式 (deck) 自适应等比缩放：确保内部 shell.js 始终拥有 390x790 黄金纵向空间，彻底根治手机端十字键与选择/开始重叠
+  function fitDeckFrame() {
+    if (!frameBox || !frame || !stage) return;
+    if (mode !== 'deck') {
+      frameBox.style.width = '';
+      frameBox.style.height = '';
+      frame.style.width = '';
+      frame.style.height = '';
+      frame.style.transform = '';
+      return;
+    }
+    var sw = stage.clientWidth;
+    var sh = stage.clientHeight;
+    if (!sw || !sh) return;
+    var baseW = 390;
+    var baseH = 790;
+    if (sw <= 520 && sh >= sw * 1.98) {
+      frameBox.style.width = sw + 'px';
+      frameBox.style.height = sh + 'px';
+      frame.style.width = sw + 'px';
+      frame.style.height = sh + 'px';
+      frame.style.transform = 'none';
+    } else {
+      var s = Math.min(sw / baseW, sh / baseH);
+      var boxW = Math.max(1, Math.round(baseW * s));
+      var boxH = Math.max(1, Math.round(baseH * s));
+      frameBox.style.width = boxW + 'px';
+      frameBox.style.height = boxH + 'px';
+      frame.style.width = baseW + 'px';
+      frame.style.height = baseH + 'px';
+      frame.style.transformOrigin = '0 0';
+      frame.style.transform = 'scale(' + s + ')';
+    }
+  }
+
+  window.addEventListener('resize', function () {
+    isMobile = isMobileDevice();
+    document.body.classList.toggle('is-mobile', isMobile);
+    fitDeckFrame();
+  });
+
   // 2. 模式切换
   function paintMode() {
     var btns = modeSwitch.querySelectorAll('.mode-btn');
@@ -87,6 +146,7 @@
     }
     document.documentElement.setAttribute('data-mode', mode);
     document.body.setAttribute('data-mode', mode);
+    fitDeckFrame();
   }
   function setMode(next, quiet) {
     if (MODES.indexOf(next) < 0) return;
@@ -139,7 +199,7 @@
   stage.addEventListener('pointerdown', function () { if (mode !== 'deck') focusGame(); });
   window.addEventListener('blur', function () { if (bridge) bridge.releaseAll(); });
 
-  // 4. 纯画面渲染：只 drawImage(source())，不自己 tick
+  // 4. 纯画面与触控手柄渲染：只 drawImage(source())，不自己 tick
   function drawFrame() {
     if (!coreRef || typeof coreRef.source !== 'function') return;
     var src = null;
@@ -148,16 +208,26 @@
     var W = stage.clientWidth;
     var H = stage.clientHeight;
     if (!W || !H) return;
-    // 底部留 44px 黑边给细条工具（配合 CSS 上移 22px），避免压住游戏画面
-    var usableH = Math.max(80, H - 44);
-    var fitScale = Math.min(W / src.width, usableH / src.height);
+
+    var isPortraitVirtual = (mode === 'virtual' && H > W * 1.05);
+    document.body.classList.toggle('is-portrait-virtual', isPortraitVirtual);
+
+    // 竖屏触控手柄模式下，画面居于上半主视窗，下半部留给 8 向十字键 + 动作键控制台，绝不遮挡画面
+    var usableW = Math.max(120, W - (W <= 680 ? 16 : 32));
+    var usableH = isPortraitVirtual
+      ? Math.max(140, Math.min(H * 0.48, H - 300))
+      : Math.max(80, H - 56);
+
+    var fitScale = Math.min(usableW / src.width, usableH / src.height);
     var scale = fitScale;
     if (scaleMode === '1x') {
       scale = 1;
     } else if (/^[234]x$/.test(scaleMode)) {
       scale = Math.min(parseInt(scaleMode, 10), Math.max(1, Math.floor(fitScale)));
+    } else if ((scaleMode === 'exact' || scaleMode === 'integer') && !explicitScaleParam && W <= 768) {
+      // 手机与窄屏下自适应铺满宽度，避免 256x240 原画在 390px 手机上缩成小方块
+      scale = fitScale;
     } else if (scaleMode === 'exact' || scaleMode === 'integer') {
-      // 整数倍：每个源像素占固定 N×N 显示像素，电视 / 大屏上不忽宽忽窄
       scale = Math.max(1, Math.floor(fitScale));
     }
     if (!scaleLogged) {
@@ -173,12 +243,10 @@
       fullCanvas.style.width = w + 'px';
       fullCanvas.style.height = h + 'px';
     }
-    // 容器与画面等尺寸：两颗功能键与虚拟键都紧贴游戏画面
     if (screenWrap) {
       screenWrap.style.width = w + 'px';
       screenWrap.style.height = h + 'px';
     }
-    // 左右黑边够宽就把功能键放到画面右侧紧贴处，避免盖住 HUD
     if (fullActions) {
       fullActions.classList.toggle('outside', (W - w) / 2 >= 90);
     }
@@ -195,11 +263,10 @@
   function startFullLoop() {
     if (fullRafId != null) window.cancelAnimationFrame(fullRafId);
     fullRafId = null;
-    // 同步画首帧：切换模式立刻出画面，不依赖 rAF 是否被浏览器调度
     drawFrame();
     function loop() {
       fullRafId = window.requestAnimationFrame(loop);
-      // 严禁在此处调用 coreRef.tick()！帧推进完全由 iframe 内 shell.js 统一负责，杜绝双 rAF 并发重入导致 CPU 崩溃 (invalid opcode at $3a)
+      // 严禁在此处调用 coreRef.tick()！帧推进完全由 iframe 内 shell.js 统一负责
       drawFrame();
       if (gamepad) {
         var s = gamepad.poll();
@@ -252,7 +319,7 @@
     return fullActions.children.length;
   }
 
-  // 6. 虚拟键（DOM 始终生成，由 CSS 按模式显示）
+  // 6. 虚拟键 / 手机触控手柄（DOM 始终生成，由 CSS 按模式显示）
   var VK = window.WEB_VIRTUAL_KEYS;
   function renderVirtual() {
     if (!bridge || !VK || !virtualLayer) return 0;
@@ -349,7 +416,7 @@
     } catch (err) { toast('录屏启动失败: ' + err.message); }
   }
 
-  // 9. 浏览器全屏与手机横屏（失败静默降级）
+  // 9. 浏览器全屏
   var fsBtn = document.getElementById('btn-browser-fullscreen');
   if (fsBtn) fsBtn.addEventListener('click', function () {
     try {
@@ -357,13 +424,6 @@
       else stage.requestFullscreen();
     } catch (err) { toast('浏览器全屏不可用'); }
   });
-  function tryLandscape() {
-    try {
-      if (window.screen && screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock('landscape').catch(function () {});
-      }
-    } catch (err) { /* 桌面 / 不支持时保持竖持居中 */ }
-  }
 
   // 10. 模式应用（core ready 后才完整执行）
   function applyMode() {
@@ -374,13 +434,13 @@
     paintMode();
     if (mode === 'full' || mode === 'virtual') {
       startFullLoop();
-      tryLandscape();
       focusGame();
       toast('「' + modeName(mode) + '」已开启：' +
-        (mode === 'full' ? '点一下画面用键盘或接蓝牙手柄；想用鼠标/手指点就切「虚拟键」或「掌机」。'
-          : '半透明按键与键盘同键位，支持多指同按。'));
+        (mode === 'full' ? '点一下画面用键盘或接蓝牙手柄；手机端可切「手柄」或「掌机」。'
+          : '左侧 8 向滑动十字键，右侧多指动作键，支持边走边打。'));
     } else {
       stopFullLoop();
+      fitDeckFrame();
       focusGame();
       toast('「掌机」模式：原样显示整台掌机，触摸按键由外壳处理。');
     }
@@ -414,6 +474,7 @@
 
   // 12. 同源载入 + 等待 GGEMU_CORE
   frame.addEventListener('load', function () {
+    fitDeckFrame();
     var tries = 0;
     var timer = window.setInterval(function () {
       var core = null;
@@ -478,7 +539,7 @@
 
     // 步骤 4：虚拟键
     var vkCount = renderVirtual();
-    lines.push('virtual-keys-ready  共 ' + vkCount + ' 颗虚拟键（多指 Pointer Events）');
+    lines.push('virtual-keys-ready  共 ' + vkCount + ' 颗虚拟键（8向滑动十字键 + 多指 Pointer Events）');
 
     // 步骤 5：手柄
     var GP = window.WEB_GAMEPAD;
@@ -509,7 +570,7 @@
     }
   }
 
-  // 13. WebRTC 跨端双人联机支持 (PC 房主 1P + 手机遥控 2P)
+  // 13. WebRTC + WebSocket 双擎跨端联机支持 (PC 房主 1P + 手机遥控 2P)
   function isCapsuleBtnId(btn) {
     var norm = String(btn || '').toLowerCase().replace(/^btn-/, '');
     return norm === 'start' || norm === 'select' || norm === 'coin';
@@ -523,6 +584,7 @@
     if (Netplay.isClientMode()) {
       document.body.classList.add('is-client');
       var clientVideo = document.getElementById('client-video');
+      var clientCanvas = document.getElementById('client-canvas');
       var clientAudioPrompt = document.getElementById('client-audio-prompt');
       var promptTitleEl = document.getElementById('client-prompt-title');
       var promptDescEl = document.getElementById('client-prompt-desc');
@@ -540,8 +602,35 @@
         titleEl.textContent = (game ? game.title : '2P 联机') + ' · 连接中';
       }
 
+      // 2P 手机端轻触按键合成微音效（当走 WebSocket 保底帧流无 WebRTC 音轨时也能提供清脆按键反馈）
+      var clientBeepCtx = null;
+      var userUnlockedAudio = false;
+      var webrtcVideoPlaying = false;
+
+      function playClientTapFeedback(isAction) {
+        if (!userUnlockedAudio) return;
+        try {
+          var AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return;
+          if (!clientBeepCtx) clientBeepCtx = new AC();
+          if (clientBeepCtx.state === 'suspended') clientBeepCtx.resume().catch(function () {});
+          if (webrtcVideoPlaying && clientVideo && !clientVideo.muted) return;
+          var osc = clientBeepCtx.createOscillator();
+          var gain = clientBeepCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.value = isAction ? 520 : 340;
+          gain.gain.setValueAtTime(0.035, clientBeepCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, clientBeepCtx.currentTime + 0.035);
+          osc.connect(gain);
+          gain.connect(clientBeepCtx.destination);
+          osc.start();
+          osc.stop(clientBeepCtx.currentTime + 0.038);
+        } catch (_) {}
+      }
+
       var clientSender = Netplay.createClientInputSender(function (btn, pressed) {
         Netplay.sendInput(btn, pressed);
+        if (pressed) playClientTapFeedback(btn === 'a' || btn === 'b' || btn === 'start');
       });
 
       function paintDpadVisual(dirs) {
@@ -567,7 +656,6 @@
       function renderClientControls(pad) {
         var specs = Netplay.buildClientButtonSpecs(pad);
 
-        // 动作区动态渲染（支持 2 键 / 3 键 / 4 键菱形 / 6 键街机）
         if (actionsEl) {
           actionsEl.innerHTML = '';
           actionsEl.className = 'client-actions touch-interactive layout-' + specs.layoutMode;
@@ -587,7 +675,6 @@
           });
         }
 
-        // 功能胶囊区（选择/开始 或 投币/开始）
         if (capsulesEl) {
           capsulesEl.innerHTML = '';
           specs.capsules.forEach(function (cap) {
@@ -600,7 +687,6 @@
           });
         }
 
-        // 肩键区（L / R，如 SFC / GBA）
         if (shouldersEl) {
           shouldersEl.innerHTML = '';
           if (specs.shoulders && specs.shoulders.length) {
@@ -619,7 +705,6 @@
         }
       }
 
-      // 初始先按游戏类别渲染兜底按键，连上房主后再按 welcome.pad 精确同步
       var fallbackPad = (game && game.category === 'arcade')
         ? {
             layout: 'diamond',
@@ -635,7 +720,48 @@
         : null;
       renderClientControls(fallbackPad);
 
-      // D-Pad 8 方向连续滑动触控（Pointer Events + setPointerCapture）
+      function tryPlayClientVideo(wantSound) {
+        if (!clientVideo || !clientVideo.srcObject) return;
+        if (wantSound) {
+          clientVideo.muted = false;
+          var p = clientVideo.play();
+          if (p && typeof p.then === 'function') {
+            p.then(function () {
+              if (btnClientSound) btnClientSound.style.display = 'none';
+            }).catch(function () {
+              clientVideo.muted = true;
+              clientVideo.play().catch(function () {});
+              if (btnClientSound) btnClientSound.style.display = 'inline-block';
+            });
+          }
+        } else {
+          clientVideo.muted = true;
+          clientVideo.play().catch(function () {});
+        }
+      }
+
+      function activateVideo(e) {
+        if (e && typeof e.preventDefault === 'function' && e.target === btnClientStart) {
+          e.preventDefault();
+        }
+        userUnlockedAudio = true;
+        if (clientAudioPrompt) clientAudioPrompt.style.display = 'none';
+        if (btnClientSound) btnClientSound.style.display = 'none';
+        if (clientVideo && clientVideo.srcObject) {
+          tryPlayClientVideo(true);
+        }
+      }
+
+      if (btnClientStart) {
+        btnClientStart.addEventListener('click', activateVideo);
+        btnClientStart.addEventListener('touchend', activateVideo, { passive: false });
+      }
+      if (btnClientSound) {
+        btnClientSound.addEventListener('click', activateVideo);
+        btnClientSound.addEventListener('touchend', activateVideo, { passive: false });
+      }
+
+      // 只要玩家触碰任何 2P 操控按键，自动解锁声音并收起提示层
       if (dpadEl) {
         var dpadPointerId = null;
         function updateDpadFromEvent(e) {
@@ -657,6 +783,7 @@
         }
         dpadEl.addEventListener('pointerdown', function (e) {
           e.preventDefault();
+          activateVideo();
           if (dpadPointerId != null && dpadPointerId !== e.pointerId) return;
           dpadPointerId = e.pointerId;
           try { dpadEl.setPointerCapture(e.pointerId); } catch (_) {}
@@ -672,7 +799,6 @@
         dpadEl.addEventListener('lostpointercapture', releaseDpad);
       }
 
-      // 动作键 / 胶囊键 / 肩键多指独立追踪（Pointer Events 委托）
       var pointerTargetMap = {};
       function bindButtonContainer(container) {
         if (!container) return;
@@ -680,6 +806,7 @@
           var btnEl = e.target && e.target.closest ? e.target.closest('[data-btn]') : null;
           if (!btnEl) return;
           e.preventDefault();
+          activateVideo();
           var btnId = btnEl.getAttribute('data-btn');
           if (!btnId) return;
           pointerTargetMap[String(e.pointerId)] = btnEl;
@@ -693,7 +820,6 @@
           if (btnEl) {
             delete pointerTargetMap[pid];
             clientSender.releaseButton(e.pointerId);
-            // 仅当没有其他手指还按在同一元素上时移除激活态
             var stillHeld = false;
             var keys = Object.keys(pointerTargetMap);
             for (var i = 0; i < keys.length; i++) {
@@ -723,49 +849,51 @@
         clearAll: clearAllClientVisuals
       };
 
-      var userUnlockedAudio = false;
+      // 监听原生 WebRTC video 是否真正渲染出像素，若是则通知房主停发保底帧
+      if (clientVideo) {
+        ['loadeddata', 'playing', 'resize'].forEach(function (evName) {
+          clientVideo.addEventListener(evName, function () {
+            if (clientVideo.videoWidth > 0 && clientVideo.videoHeight > 0) {
+              webrtcVideoPlaying = true;
+              if (clientCanvas) clientCanvas.style.display = 'none';
+              if (clientAudioPrompt) clientAudioPrompt.style.display = 'none';
+              if (!userUnlockedAudio && btnClientSound) {
+                btnClientSound.style.display = 'inline-block';
+              }
+              if (typeof Netplay.notifyWebrtcVideoReady === 'function') {
+                Netplay.notifyWebrtcVideoReady();
+              }
+            }
+          });
+        });
+      }
 
-      function tryPlayClientVideo(wantSound) {
-        if (!clientVideo) return;
-        if (wantSound) {
-          clientVideo.muted = false;
-          var p = clientVideo.play();
-          if (p && typeof p.then === 'function') {
-            p.then(function () {
-              if (btnClientSound) btnClientSound.style.display = 'none';
-            }).catch(function () {
-              // 移动端浏览器在异步回调中拦截有声播放时，立即降级静音保证画面绝不黑屏，并展示顶部一键开声胶囊
-              clientVideo.muted = true;
-              clientVideo.play().catch(function () {});
-              if (btnClientSound) btnClientSound.style.display = 'inline-block';
-            });
+      // 保底 WebSocket 实时画面帧渲染器（即使 WebRTC UDP 被拦截也绝不黑屏）
+      var frameImg = new Image();
+      var frameBusy = false;
+      var clientCanvasCtx = clientCanvas ? clientCanvas.getContext('2d', { alpha: false }) : null;
+      frameImg.onload = function () {
+        frameBusy = false;
+        if (webrtcVideoPlaying || !clientCanvas || !clientCanvasCtx) return;
+        var w = frameImg.naturalWidth || 256;
+        var h = frameImg.naturalHeight || 240;
+        if (clientCanvas.width !== w || clientCanvas.height !== h) {
+          clientCanvas.width = w;
+          clientCanvas.height = h;
+        }
+        clientCanvasCtx.imageSmoothingEnabled = false;
+        clientCanvasCtx.drawImage(frameImg, 0, 0, w, h);
+        // 首帧画面到达即自动移开遮罩，直接展示实时游戏屏幕
+        if (clientAudioPrompt && clientAudioPrompt.style.display !== 'none') {
+          clientAudioPrompt.style.display = 'none';
+          if (!userUnlockedAudio && btnClientSound) {
+            btnClientSound.style.display = 'inline-block';
           }
-        } else {
-          clientVideo.muted = true;
-          clientVideo.play().catch(function () {});
         }
-      }
-
-      function activateVideo(e) {
-        if (e && typeof e.preventDefault === 'function') e.preventDefault();
-        userUnlockedAudio = true;
-        if (clientAudioPrompt) clientAudioPrompt.style.display = 'none';
-        if (btnClientSound) btnClientSound.style.display = 'none';
-        if (clientVideo && clientVideo.srcObject) {
-          tryPlayClientVideo(true);
-        } else if (clientVideo) {
-          clientVideo.play().catch(function () {});
-        }
-      }
-
-      if (btnClientStart) {
-        btnClientStart.addEventListener('click', activateVideo);
-        btnClientStart.addEventListener('touchend', activateVideo, { passive: false });
-      }
-      if (btnClientSound) {
-        btnClientSound.addEventListener('click', activateVideo);
-        btnClientSound.addEventListener('touchend', activateVideo, { passive: false });
-      }
+      };
+      frameImg.onerror = function () {
+        frameBusy = false;
+      };
 
       // 启动 Client 模式连接房主
       Netplay.startClient({
@@ -773,12 +901,12 @@
           return clientSender.snapshotHeld ? clientSender.snapshotHeld() : [];
         },
         onConnected: function () {
-          if (pingEl) pingEl.textContent = '已连接';
+          if (pingEl && pingEl.textContent === '--ms') pingEl.textContent = '已连接';
           if (titleEl) {
             titleEl.textContent = (game ? game.title : '2P 联机') + ' · 已连接';
           }
-          if (promptTitleEl) promptTitleEl.textContent = '已连接 1P 房主！';
-          if (promptDescEl) promptDescEl.textContent = '轻触按钮开启联机声音与低延迟操控';
+          if (promptTitleEl) promptTitleEl.textContent = '已连接 1P 房主，正在同步画面...';
+          if (promptDescEl) promptDescEl.textContent = '轻触任意按键即可操控并开启声音';
         },
         onWelcome: function (data) {
           if (titleEl) {
@@ -790,23 +918,24 @@
             renderClientControls(data.pad);
           }
         },
+        onFrame: function (frameData) {
+          if (webrtcVideoPlaying || !frameData || !frameData.d || frameBusy) return;
+          frameBusy = true;
+          frameImg.src = frameData.d;
+        },
         onStream: function (remoteStream) {
           if (clientVideo) {
             clientVideo.srcObject = remoteStream;
             if (userUnlockedAudio) {
               tryPlayClientVideo(true);
             } else {
-              // 玩家尚未点击遮罩时，底层先静音播放实时画面，杜绝黑屏等待
               tryPlayClientVideo(false);
-              if (promptTitleEl) promptTitleEl.textContent = '实时画面已就绪！';
-              if (promptDescEl) promptDescEl.textContent = '轻触下方按钮开启声音并加入对战';
             }
           }
         },
         onDisconnected: function () {
           clearAllClientVisuals();
           if (pingEl) pingEl.textContent = '已断开';
-          alert('与 1P 房主的连接已断开');
         }
       });
       return;
@@ -838,7 +967,6 @@
       });
     }
 
-    // 默认局域网或当前地址推测
     var isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
     var currentHost = window.location.host;
     if (isLocal) {
@@ -847,23 +975,37 @@
     if (hostInput) hostInput.value = currentHost;
     var ipRow = document.getElementById('netplay-ip-row');
     if (ipRow && !isLocal) {
-      ipRow.style.display = 'none'; // 线上生产环境直接隐藏局域网配置输入框
+      ipRow.style.display = 'none';
+    }
+
+    function getHostSourceCanvas() {
+      var src = coreRef && typeof coreRef.source === 'function' ? coreRef.source() : null;
+      if (src && src.width && src.height) return src;
+      return fullCanvas;
     }
 
     function captureHostStream() {
       ensureAudioActive();
-      var src = coreRef && typeof coreRef.source === 'function' ? coreRef.source() : null;
       var stream = null;
-      if (src && typeof src.captureStream === 'function') {
+      // 优先使用可见的 fullCanvas 捕获流（避免部分浏览器对未挂载 DOM 的离屏 canvas 暂停推流帧）
+      if (fullCanvas && fullCanvas.width > 0 && typeof fullCanvas.captureStream === 'function') {
         try {
-          var s = src.captureStream(60);
-          if (s && s.getVideoTracks && s.getVideoTracks().length > 0) {
-            stream = s;
+          var fs = fullCanvas.captureStream(60);
+          if (fs && fs.getVideoTracks && fs.getVideoTracks().length > 0) {
+            stream = fs;
           }
         } catch (_) {}
       }
-      if (!stream && fullCanvas && fullCanvas.captureStream) {
-        stream = fullCanvas.captureStream(60);
+      if (!stream) {
+        var src = coreRef && typeof coreRef.source === 'function' ? coreRef.source() : null;
+        if (src && typeof src.captureStream === 'function') {
+          try {
+            var s = src.captureStream(60);
+            if (s && s.getVideoTracks && s.getVideoTracks().length > 0) {
+              stream = s;
+            }
+          } catch (_) {}
+        }
       }
       if (stream && coreRef && typeof coreRef.connectRecordingAudio === 'function') {
         var track = coreRef.connectRecordingAudio();
@@ -882,6 +1024,7 @@
           pad: coreRef && coreRef.pad ? coreRef.pad : null,
           gameTitle: game ? game.title : '',
           getStream: captureHostStream,
+          getSourceCanvas: getHostSourceCanvas,
           onReady: function (roomId) {
             if (roomBadge) roomBadge.textContent = roomId;
             statusText.textContent = '等待 2P 手机扫码连接...';
@@ -890,7 +1033,7 @@
           },
           onClientJoin: function () {
             if (bridge) bridge.releaseAll(2);
-            statusText.textContent = '2P 手机玩家已就绪！';
+            statusText.textContent = '2P 手机玩家已就绪，画面已同步！';
             statusText.style.color = '#4ade80';
             var km = bridge ? bridge.getKeymap() : null;
             var isArcade = !!(km && km.map && km.map.coin);
