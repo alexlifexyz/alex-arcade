@@ -71,7 +71,7 @@
   for (var i = 0; i < games.length; i++) {
     var opt = document.createElement('option');
     opt.value = games[i].id;
-    opt.textContent = games[i].title + ' · ' + games[i].platform;
+    opt.textContent = (games[i].multiplayer ? '[2P] ' : '') + games[i].title + ' · ' + games[i].platform;
     if (game && games[i].id === game.id) opt.selected = true;
     select.appendChild(opt);
   }

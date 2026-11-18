@@ -62,6 +62,20 @@ def read_title(tool_dir, tool_id):
     return tool_id
 
 
+SINGLE_PLAYER_OVERRIDE = {"tetris-nes"}
+
+
+def is_multiplayer(tool_dir, tool_id):
+    if tool_id in SINGLE_PLAYER_OVERRIDE:
+        return False
+    core_js = os.path.join(tool_dir, "assets", "core.js")
+    if not os.path.exists(core_js):
+        return False
+    with open(core_js, encoding="utf-8", errors="ignore") as f:
+        text = f.read()
+    return ("player === 2" in text or "p===2" in text or "p === 2" in text or "isP2" in text)
+
+
 def scan():
     games = []
     for tool_id in sorted(os.listdir(TOOLS)):
@@ -73,13 +87,16 @@ def scan():
             continue
         platform = platform_of(tool_id)
         title = read_title(tool_dir, tool_id)
-        games.append({
+        item = {
             "id": tool_id,
             "title": title,
             "platform": platform,
             "category": category_of(tool_id, platform),
             "desc": title + " · " + platform,
-        })
+        }
+        if is_multiplayer(tool_dir, tool_id):
+            item["multiplayer"] = True
+        games.append(item)
     return games
 
 

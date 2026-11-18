@@ -1,14 +1,15 @@
 // shared/web/games.js
 // 网页播放器游戏清单：由 shared/web/sync_games.py 扫描 tools/ 自动生成，请勿手工编辑。
 // 判据：tools/<id>/ 同时有 index.html 与 assets/core.js；新增或删除工程后重新运行同步脚本。
-// 共 134 款。
+// 共 134 款（其中 34 款支持双人联机）。
 window.WEB_GAMES = [
   {
     "id": "3wonders-cps1",
     "title": "三合一",
     "platform": "CPS1 街机",
     "category": "arcade",
-    "desc": "三合一 · CPS1 街机"
+    "desc": "三合一 · CPS1 街机",
+    "multiplayer": true
   },
   {
     "id": "advance-wars-gba",
@@ -57,7 +58,8 @@ window.WEB_GAMES = [
     "title": "炸弹人2",
     "platform": "FC/NES",
     "category": "console",
-    "desc": "炸弹人2 · FC/NES"
+    "desc": "炸弹人2 · FC/NES",
+    "multiplayer": true
   },
   {
     "id": "bubble-bobble-gbc",
@@ -71,7 +73,8 @@ window.WEB_GAMES = [
     "title": "名将",
     "platform": "CPS1 街机",
     "category": "arcade",
-    "desc": "名将 · CPS1 街机"
+    "desc": "名将 · CPS1 街机",
+    "multiplayer": true
   },
   {
     "id": "castlevania-aria-gba",
@@ -99,14 +102,16 @@ window.WEB_GAMES = [
     "title": "松鼠大作战",
     "platform": "FC/NES",
     "category": "console",
-    "desc": "松鼠大作战 · FC/NES"
+    "desc": "松鼠大作战 · FC/NES",
+    "multiplayer": true
   },
   {
     "id": "chipdale2-nes",
     "title": "松鼠大作战2",
     "platform": "FC/NES",
     "category": "console",
-    "desc": "松鼠大作战2 · FC/NES"
+    "desc": "松鼠大作战2 · FC/NES",
+    "multiplayer": true
   },
   {
     "id": "chobits-gba",
@@ -155,7 +160,8 @@ window.WEB_GAMES = [
     "title": "魂斗罗初代 1988",
     "platform": "FC/NES",
     "category": "console",
-    "desc": "魂斗罗初代 1988 · FC/NES"
+    "desc": "魂斗罗初代 1988 · FC/NES",
+    "multiplayer": true
   },
   {
     "id": "crossfire-nes",
@@ -169,21 +175,24 @@ window.WEB_GAMES = [
     "title": "双截龙",
     "platform": "FC/NES",
     "category": "console",
-    "desc": "双截龙 · FC/NES"
+    "desc": "双截龙 · FC/NES",
+    "multiplayer": true
   },
   {
     "id": "dd2-nes",
     "title": "双截龙 II：复仇",
     "platform": "FC/NES",
     "category": "console",
-    "desc": "双截龙 II：复仇 · FC/NES"
+    "desc": "双截龙 II：复仇 · FC/NES",
+    "multiplayer": true
   },
   {
     "id": "dd3-nes",
     "title": "双截龙 III",
     "platform": "FC/NES",
     "category": "console",
-    "desc": "双截龙 III · FC/NES"
+    "desc": "双截龙 III · FC/NES",
+    "multiplayer": true
   },
   {
     "id": "deadfox-nes",
@@ -197,7 +206,8 @@ window.WEB_GAMES = [
     "title": "恐龙快打",
     "platform": "CPS1 街机",
     "category": "arcade",
-    "desc": "恐龙快打 · CPS1 街机"
+    "desc": "恐龙快打 · CPS1 街机",
+    "multiplayer": true
   },
   {
     "id": "donkey-kong-jr-nes",
@@ -218,7 +228,8 @@ window.WEB_GAMES = [
     "title": "马里奥医生",
     "platform": "FC/NES",
     "category": "console",
-    "desc": "马里奥医生 · FC/NES"
+    "desc": "马里奥医生 · FC/NES",
+    "multiplayer": true
   },
   {
     "id": "dragonball-bukuto-gba",
@@ -344,35 +355,40 @@ window.WEB_GAMES = [
     "title": "铁钩船长",
     "platform": "CPS1 街机",
     "category": "arcade",
-    "desc": "铁钩船长 · CPS1 街机"
+    "desc": "铁钩船长 · CPS1 街机",
+    "multiplayer": true
   },
   {
     "id": "ice-climber-nes",
     "title": "敲冰块",
     "platform": "FC/NES",
     "category": "console",
-    "desc": "敲冰块 · FC/NES"
+    "desc": "敲冰块 · FC/NES",
+    "multiplayer": true
   },
   {
     "id": "inthunt-cps1",
     "title": "海底大作战",
     "platform": "CPS1 街机",
     "category": "arcade",
-    "desc": "海底大作战 · CPS1 街机"
+    "desc": "海底大作战 · CPS1 街机",
+    "multiplayer": true
   },
   {
     "id": "jackal-nes",
     "title": "赤色要塞",
     "platform": "FC/NES",
     "category": "console",
-    "desc": "赤色要塞 · FC/NES"
+    "desc": "赤色要塞 · FC/NES",
+    "multiplayer": true
   },
   {
     "id": "kage-nes",
     "title": "影子传说",
     "platform": "FC/NES",
     "category": "console",
-    "desc": "影子传说 · FC/NES"
+    "desc": "影子传说 · FC/NES",
+    "multiplayer": true
   },
   {
     "id": "kirby-dreamland-gba",
@@ -407,7 +423,8 @@ window.WEB_GAMES = [
     "title": "圆桌骑士 街机经典",
     "platform": "CPS1 街机",
     "category": "arcade",
-    "desc": "圆桌骑士 街机经典 · CPS1 街机"
+    "desc": "圆桌骑士 街机经典 · CPS1 街机",
+    "multiplayer": true
   },
   {
     "id": "kof-gba",
@@ -421,7 +438,8 @@ window.WEB_GAMES = [
     "title": "拳皇 97 经典格斗",
     "platform": "FC/NES",
     "category": "console",
-    "desc": "拳皇 97 经典格斗 · FC/NES"
+    "desc": "拳皇 97 经典格斗 · FC/NES",
+    "multiplayer": true
   },
   {
     "id": "kungfu-nes",
@@ -435,7 +453,8 @@ window.WEB_GAMES = [
     "title": "沙罗曼蛇：生命力量",
     "platform": "FC/NES",
     "category": "console",
-    "desc": "沙罗曼蛇：生命力量 · FC/NES"
+    "desc": "沙罗曼蛇：生命力量 · FC/NES",
+    "multiplayer": true
   },
   {
     "id": "loderunner-nes",
@@ -617,21 +636,24 @@ window.WEB_GAMES = [
     "title": "热血高校躲避球",
     "platform": "FC/NES",
     "category": "console",
-    "desc": "热血高校躲避球 · FC/NES"
+    "desc": "热血高校躲避球 · FC/NES",
+    "multiplayer": true
   },
   {
     "id": "nekketsu-kakutou-nes",
     "title": "热血格斗传说",
     "platform": "FC/NES",
     "category": "console",
-    "desc": "热血格斗传说 · FC/NES"
+    "desc": "热血格斗传说 · FC/NES",
+    "multiplayer": true
   },
   {
     "id": "nekketsu-soccer-nes",
     "title": "热血足球",
     "platform": "FC/NES",
     "category": "console",
-    "desc": "热血足球 · FC/NES"
+    "desc": "热血足球 · FC/NES",
+    "multiplayer": true
   },
   {
     "id": "ninja-gaiden3-nes",
@@ -652,7 +674,8 @@ window.WEB_GAMES = [
     "title": "街机泡泡龙",
     "platform": "CPS1 街机",
     "category": "arcade",
-    "desc": "街机泡泡龙 · CPS1 街机"
+    "desc": "街机泡泡龙 · CPS1 街机",
+    "multiplayer": true
   },
   {
     "id": "pokemon-emerald-gba",
@@ -715,14 +738,16 @@ window.WEB_GAMES = [
     "title": "惩罚者",
     "platform": "CPS1 街机",
     "category": "arcade",
-    "desc": "惩罚者 · CPS1 街机"
+    "desc": "惩罚者 · CPS1 街机",
+    "multiplayer": true
   },
   {
     "id": "rcr-nes",
     "title": "热血物语",
     "platform": "FC/NES",
     "category": "console",
-    "desc": "热血物语 · FC/NES"
+    "desc": "热血物语 · FC/NES",
+    "multiplayer": true
   },
   {
     "id": "rhythm-tengoku-gba",
@@ -743,7 +768,8 @@ window.WEB_GAMES = [
     "title": "沙罗曼蛇",
     "platform": "FC/NES",
     "category": "console",
-    "desc": "沙罗曼蛇 · FC/NES"
+    "desc": "沙罗曼蛇 · FC/NES",
+    "multiplayer": true
   },
   {
     "id": "sanguo3-sfc",
@@ -764,7 +790,8 @@ window.WEB_GAMES = [
     "title": "街头霸王四大天王",
     "platform": "CPS1 街机",
     "category": "arcade",
-    "desc": "街头霸王四大天王 · CPS1 街机"
+    "desc": "街头霸王四大天王 · CPS1 街机",
+    "multiplayer": true
   },
   {
     "id": "shining-soul-2-gba",
@@ -792,7 +819,8 @@ window.WEB_GAMES = [
     "title": "雪人兄弟",
     "platform": "FC/NES",
     "category": "console",
-    "desc": "雪人兄弟 · FC/NES"
+    "desc": "雪人兄弟 · FC/NES",
+    "multiplayer": true
   },
   {
     "id": "spiderman-battle-for-ny-gba",
@@ -827,14 +855,16 @@ window.WEB_GAMES = [
     "title": "超级魂斗罗",
     "platform": "FC/NES",
     "category": "console",
-    "desc": "超级魂斗罗 · FC/NES"
+    "desc": "超级魂斗罗 · FC/NES",
+    "multiplayer": true
   },
   {
     "id": "tank-nes",
     "title": "坦克大战 1990",
     "platform": "FC/NES",
     "category": "console",
-    "desc": "坦克大战 1990 · FC/NES"
+    "desc": "坦克大战 1990 · FC/NES",
+    "multiplayer": true
   },
   {
     "id": "tenchi1-nes",
@@ -862,7 +892,8 @@ window.WEB_GAMES = [
     "title": "激龟快打",
     "platform": "FC/NES",
     "category": "console",
-    "desc": "激龟快打 · FC/NES"
+    "desc": "激龟快打 · FC/NES",
+    "multiplayer": true
   },
   {
     "id": "tmnt2-nes",
@@ -876,7 +907,8 @@ window.WEB_GAMES = [
     "title": "忍者神龟3：曼哈顿计划",
     "platform": "FC/NES",
     "category": "console",
-    "desc": "忍者神龟3：曼哈顿计划 · FC/NES"
+    "desc": "忍者神龟3：曼哈顿计划 · FC/NES",
+    "multiplayer": true
   },
   {
     "id": "ultraman-keibitai-gba",
@@ -911,14 +943,16 @@ window.WEB_GAMES = [
     "title": "三国志二赤壁之战",
     "platform": "CPS1 街机",
     "category": "arcade",
-    "desc": "三国志二赤壁之战 · CPS1 街机"
+    "desc": "三国志二赤壁之战 · CPS1 街机",
+    "multiplayer": true
   },
   {
     "id": "wrecking-crew-nes",
     "title": "拆屋工",
     "platform": "FC/NES",
     "category": "console",
-    "desc": "拆屋工 · FC/NES"
+    "desc": "拆屋工 · FC/NES",
+    "multiplayer": true
   },
   {
     "id": "yoshi-island-gba",

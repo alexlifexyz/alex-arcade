@@ -6,17 +6,28 @@
   <title>Alex 游戏百宝箱 · 网页播放器</title>
   <style>
     :root {
-      --bg: #0b0d13;
-      --panel: #131722;
-      --border: #2b344d;
-      --text: #f0f4f8;
+      --bg: #07090e;
+      --panel: rgba(13, 16, 24, 0.86);
+      --surface: #121622;
+      --surface-hover: #1a2030;
+      --border: rgba(255, 255, 255, 0.09);
+      --border-strong: rgba(255, 255, 255, 0.16);
+      --text: #f3f5f8;
       --sub: #94a3b8;
-      --accent: #00d2ff;
+      --muted: #64748b;
+      --accent: #38bdf8;
+      --gold: #f0c14b;
+      --emerald: #10b981;
+      --emerald-bright: #34d399;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
     body {
       background: var(--bg);
+      background-image:
+        radial-gradient(ellipse 70% 55% at 50% 45%, rgba(56, 189, 248, 0.055), transparent 70%),
+        radial-gradient(ellipse 50% 40% at 50% 100%, rgba(16, 185, 129, 0.04), transparent 70%);
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
       min-height: 100vh;
@@ -24,47 +35,195 @@
       flex-direction: column;
       align-items: center;
       overflow: hidden;
+      -webkit-font-smoothing: antialiased;
     }
+
+    /* ---------- 顶部导航控制台 (Tailwind Zinc / Linear Studio 风格) ---------- */
     .topbar {
       width: 100%;
+      min-height: 56px;
       background: var(--panel);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
       border-bottom: 1px solid var(--border);
-      padding: 10px 16px;
+      padding: 8px 18px;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
+      gap: 12px;
       flex-shrink: 0;
-      z-index: 5;
+      z-index: 10;
     }
-    .brand { font-size: 15px; font-weight: 700; letter-spacing: .5px; }
-    .brand small { display: block; font-size: 11px; font-weight: 400; color: var(--sub); margin-top: 3px; }
-    .controls { display: flex; flex-wrap: wrap; align-items: center; }
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .back-hall {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 9px;
+      background: rgba(255, 255, 255, 0.045);
+      border: 1px solid var(--border);
+      color: var(--sub);
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all .15s ease;
+    }
+    .back-hall:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.09);
+      border-color: var(--border-strong);
+    }
+    .back-hall svg { width: 14px; height: 14px; }
+    .brand {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .brand-title {
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-title::before {
+      content: "1P";
+      display: inline-grid;
+      place-items: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 5px;
+      background: linear-gradient(135deg, #ffe08a, #f0c14b);
+      color: #161006;
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 900;
+    }
+    .brand small {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--sub);
+      margin-top: 2px;
+      font-family: var(--mono);
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
     .game-select {
-      background: #1c2233;
+      appearance: none;
+      -webkit-appearance: none;
+      background-color: rgba(255, 255, 255, 0.045);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
       color: var(--text);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 7px 10px;
+      border-radius: 10px;
+      height: 36px;
+      padding: 0 30px 0 12px;
       font-size: 13px;
-      max-width: 230px;
-      margin-right: 10px;
+      font-weight: 600;
+      max-width: 220px;
+      cursor: pointer;
+      outline: none;
+      transition: border-color .15s, background-color .15s;
     }
-    .mode-switch, .mini-switch { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-    .mode-btn, .mini-btn {
-      background: #1c2233;
+    .game-select:hover, .game-select:focus {
+      border-color: var(--border-strong);
+      background-color: rgba(255, 255, 255, 0.075);
+    }
+    .game-select option {
+      background: #121622;
+      color: var(--text);
+    }
+
+    /* 分段胶囊切换器 */
+    .mode-switch {
+      display: inline-flex;
+      padding: 3px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      gap: 2px;
+    }
+    .mode-btn {
+      background: transparent;
       color: var(--sub);
       border: 0;
-      border-right: 1px solid var(--border);
-      padding: 8px 12px;
-      font-size: 13px;
+      border-radius: 7px;
+      height: 28px;
+      padding: 0 12px;
+      font-size: 12px;
+      font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
+      transition: all .14s ease;
     }
-    .mode-btn:last-child, .mini-btn:last-child { border-right: 0; }
-    .mode-btn.active, .mini-btn.active { background: var(--accent); color: #0b0d13; font-weight: 700; }
-    #btn-browser-fullscreen { margin-left: 10px; }
+    .mode-btn:hover { color: var(--text); }
+    .mode-btn.active {
+      background: rgba(255, 255, 255, 0.13);
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+    }
 
+    .mini-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 36px;
+      padding: 0 14px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.045);
+      color: var(--text);
+      border: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all .15s ease;
+    }
+    .mini-btn:hover {
+      background: rgba(255, 255, 255, 0.09);
+      border-color: var(--border-strong);
+    }
+    .netplay-btn {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.22), rgba(6, 182, 212, 0.18)) !important;
+      color: #ecfdf5 !important;
+      border: 1px solid rgba(52, 211, 153, 0.48) !important;
+      font-weight: 700;
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.18);
+    }
+    .netplay-btn::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--emerald-bright);
+      box-shadow: 0 0 8px var(--emerald-bright);
+    }
+    .netplay-btn:hover {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.34), rgba(6, 182, 212, 0.28)) !important;
+      border-color: var(--emerald-bright) !important;
+      transform: translateY(-1px);
+    }
+
+    /* ---------- 舞台与屏幕外框 ---------- */
     .stage {
       position: relative;
       flex: 1;
@@ -75,22 +234,20 @@
       padding: 12px;
       overflow: hidden;
     }
-    /* 掌机模式：iframe 原样显示整台掌机 */
     .frame-box {
       width: 390px;
       height: 780px;
       max-width: 100%;
       max-height: 100%;
       background: #05060a;
-      border: 1px solid var(--border);
-      border-radius: 16px;
+      border: 1px solid var(--border-strong);
+      border-radius: 20px;
       overflow: hidden;
-      box-shadow: 0 18px 60px rgba(0, 0, 0, .55);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, .7);
+      z-index: 3;
     }
     #game-frame { width: 100%; height: 100%; border: 0; display: block; }
 
-    /* 纯画面 / 虚拟键模式：iframe 保持标准掌机尺寸置于底层，避免 2px 视口导致布局坍缩与 rAF 节流，
-       同时 full-stage (z-index: 2, background: #000) 覆盖其上 */
     body[data-mode="full"] .frame-box,
     body[data-mode="virtual"] .frame-box {
       position: absolute;
@@ -106,56 +263,101 @@
       pointer-events: none;
       z-index: 1;
     }
-    .full-stage { display: none; position: absolute; inset: 0; background: #000; z-index: 2; }
+    .full-stage {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse 68% 56% at 50% 45%, rgba(56, 189, 248, 0.06), transparent 70%),
+        radial-gradient(ellipse 50% 40% at 50% 100%, rgba(16, 185, 129, 0.045), transparent 70%);
+      z-index: 2;
+    }
     body[data-mode="full"] .full-stage,
     body[data-mode="virtual"] .full-stage { display: block; }
 
-    /* 与游戏画面等尺寸的容器：功能键、虚拟键都贴着画面摆，不再飘到舞台角落 */
     #screen-wrap {
       position: absolute;
       left: 50%;
       top: 50%;
-      /* 上移 22px，给底部细条工具留一条黑边，不遮挡游戏画面 */
       transform: translate(-50%, calc(-50% - 22px));
     }
     #full-canvas {
       position: relative;
       display: block;
-      /* 只保留 pixelated：crisp-edges 写在后面会覆盖它，将来若改用 CSS 放大就会变糊 */
       image-rendering: pixelated;
       background: #000;
+      border-radius: 8px;
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.12),
+        0 0 0 6px #0c0f17,
+        0 0 0 7px rgba(255, 255, 255, 0.07),
+        0 28px 70px rgba(0, 0, 0, 0.82);
     }
-    /* 宽屏时贴在画面右侧黑边（完全不遮 HUD）；黑边不够就退回画面内右上角 */
-    .full-actions { position: absolute; right: 8px; top: 8px; display: flex; }
-    .full-actions.outside { left: calc(100% + 8px); right: auto; top: 0; flex-direction: column; }
-    .full-actions.outside .capsule-btn { margin-left: 0; margin-bottom: 8px; }
+
+    /* 屏幕侧边实体胶囊功能键（彻底修复文字竖排变椭圆问题） */
+    .full-actions {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      display: flex;
+      gap: 8px;
+      z-index: 4;
+    }
+    .full-actions.outside {
+      left: calc(100% + 16px);
+      right: auto;
+      top: 4px;
+      flex-direction: column;
+      gap: 10px;
+    }
     .capsule-btn {
-      background: rgba(12, 15, 22, .5);
-      color: #fff;
-      border: 1px solid rgba(255, 255, 255, .35);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 72px;
+      height: 34px;
+      padding: 0 16px;
+      background: linear-gradient(180deg, rgba(30, 37, 54, 0.9), rgba(15, 19, 30, 0.94));
+      backdrop-filter: blur(10px);
+      color: #f1f5f9;
+      border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 999px;
-      padding: 9px 16px;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 700;
-      margin-left: 8px;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
       cursor: pointer;
       touch-action: none;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+      transition: transform .1s, border-color .15s, background .15s;
     }
-    .capsule-btn:active { background: rgba(0, 210, 255, .55); }
+    .capsule-btn:hover {
+      border-color: rgba(56, 189, 248, 0.55);
+      color: #fff;
+    }
+    .capsule-btn:active, .capsule-btn.down {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.45), rgba(14, 165, 233, 0.4));
+      border-color: var(--accent);
+      transform: scale(0.95);
+    }
 
-    /* 虚拟键层（覆盖画面区域，而不是整个舞台） */
-    .virtual-layer { display: none; position: absolute; inset: 0; pointer-events: none; }
+    /* 虚拟键层 */
+    .virtual-layer { display: none; position: absolute; inset: 0; pointer-events: none; z-index: 3; }
     body[data-mode="virtual"] .virtual-layer { display: block; }
     .vkey {
       position: absolute;
       width: 58px;
       height: 58px;
       border-radius: 50%;
-      background: rgba(240, 246, 255, .18);
-      border: 1px solid rgba(255, 255, 255, .45);
+      background: rgba(15, 23, 42, 0.58);
+      backdrop-filter: blur(8px);
+      border: 1.5px solid rgba(255, 255, 255, 0.38);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2);
       color: #fff;
       font-size: 12px;
-      line-height: 1.25;
+      font-weight: 700;
+      line-height: 1.2;
       text-align: center;
       display: flex;
       flex-direction: column;
@@ -166,81 +368,123 @@
       user-select: none;
       -webkit-user-select: none;
     }
-    .vkey small { font-size: 10px; opacity: .75; }
-    .vkey.down { background: rgba(0, 210, 255, .55); }
-    .vkey[data-kind="capsule"] { width: 64px; height: 32px; border-radius: 999px; font-size: 11px; }
-    .vkey[data-kind="direction"] { background: rgba(240, 246, 255, .12); }
+    .vkey small { font-size: 9px; opacity: .72; font-family: var(--mono); margin-top: 1px; }
+    .vkey.down {
+      background: rgba(56, 189, 248, 0.58);
+      border-color: #7dd3fc;
+      transform: scale(0.94);
+    }
+    .vkey[data-kind="capsule"] { width: 68px; height: 32px; border-radius: 999px; font-size: 11px; white-space: nowrap; }
+    .vkey[data-kind="direction"] { background: rgba(15, 23, 42, 0.48); border-radius: 14px; }
 
-    /* 纯画面模式下的细条工具 */
+    /* ---------- 底部悬浮毛玻璃 Dock 工具栏 ---------- */
     .overlay-tools {
       position: absolute;
       left: 50%;
       bottom: 12px;
       transform: translateX(-50%);
-      display: flex;
-      background: rgba(12, 15, 22, .78);
-      border: 1px solid rgba(255, 255, 255, .18);
-      border-radius: 999px;
-      padding: 5px 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      background: rgba(13, 17, 26, 0.84);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 13px;
+      padding: 4px;
       white-space: nowrap;
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.65);
+      z-index: 5;
     }
     .overlay-tools button {
       background: transparent;
-      color: #e6edf6;
+      color: #cbd5e1;
       border: 0;
-      border-right: 1px solid rgba(255, 255, 255, .16);
-      padding: 5px 10px;
-      font-size: 11px;
+      border-radius: 9px;
+      padding: 6px 13px;
+      font-size: 12px;
+      font-weight: 600;
       cursor: pointer;
+      transition: all .14s ease;
     }
-    .overlay-tools button:last-child { border-right: 0; }
-    .overlay-tools button.active { color: var(--accent); font-weight: 700; }
+    .overlay-tools button:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+    .overlay-tools button.active {
+      background: rgba(56, 189, 248, 0.18);
+      color: var(--accent);
+      font-weight: 700;
+    }
 
-    .notice { font-size: 12px; color: var(--sub); padding: 0 16px 6px; text-align: center; flex-shrink: 0; }
-    /* 调试信息默认收起，只留一行手柄状态 */
+    /* ---------- 底部精简状态栏 ---------- */
+    .notice {
+      font-size: 11px;
+      color: var(--muted);
+      padding: 0 16px 4px;
+      text-align: center;
+      flex-shrink: 0;
+    }
     .footer {
       width: 100%;
+      background: rgba(9, 11, 17, 0.9);
       border-top: 1px solid var(--border);
-      padding: 6px 16px;
+      padding: 6px 18px;
       font-size: 12px;
       color: var(--sub);
-      line-height: 1.6;
+      line-height: 1.5;
       flex-shrink: 0;
-      max-height: 40vh;
+      max-height: 36vh;
       overflow: auto;
+      z-index: 5;
     }
-    .status-line { display: flex; align-items: center; flex-wrap: wrap; }
-    .status-line > span { margin-right: 12px; }
+    .status-line {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    #gamepad-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 10px;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--sub);
+    }
+    #kbd-hint {
+      color: #7dd3fc !important;
+      font-size: 11px !important;
+      margin-left: 0 !important;
+      font-family: var(--mono);
+    }
     #debug-panel { margin-left: auto; }
-    #debug-panel summary { cursor: pointer; color: var(--sub); font-size: 11px; }
-    #debug-panel[open] { width: 100%; margin-top: 6px; }
-    #debug-panel[open] summary { margin-bottom: 4px; }
-    #bridge-status { font-weight: 700; }
+    #debug-panel summary {
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      user-select: none;
+    }
+    #debug-panel summary:hover { color: var(--sub); background: rgba(255, 255, 255, 0.04); }
+    #debug-panel[open] { width: 100%; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); }
+    #bridge-status { font-weight: 700; font-family: var(--mono); }
     #bridge-status.ready { color: #4ade80; }
     #bridge-status.error { color: #f87171; }
-    #diag { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all; white-space: pre-wrap; }
-    @media (max-width: 620px) {
-      .topbar { padding: 8px 10px; }
-      .game-select { max-width: 100%; margin: 6px 0 0; }
-      .mode-switch, #btn-browser-fullscreen { margin-top: 6px; }
-      .frame-box { width: 100%; height: 100%; border-radius: 0; }
-      .overlay-tools { max-width: 100%; overflow-x: auto; }
-      .vkey { width: 52px; height: 52px; }
-    }
+    #diag { font-family: var(--mono); font-size: 11px; word-break: break-all; white-space: pre-wrap; color: #94a3b8; }
 
-    /* 联机模式与弹窗样式 */
-    .netplay-btn {
-      background: linear-gradient(135deg, #10b981, #059669) !important;
-      color: #fff !important;
-      font-weight: 700;
-      border: 0 !important;
-      margin-left: 8px;
-    }
+    /* ---------- 房主端双人联机弹窗 ---------- */
     .netplay-modal {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, .78);
+      background: rgba(4, 6, 10, 0.78);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       z-index: 100;
       align-items: center;
       justify-content: center;
@@ -248,87 +492,96 @@
     }
     .netplay-modal.show { display: flex; }
     .netplay-card {
-      background: #141824;
-      border: 1px solid #3b82f6;
-      border-radius: 16px;
-      padding: 24px;
-      max-width: 400px;
+      background: linear-gradient(180deg, #151a28 0%, #0d1018 100%);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 22px;
+      padding: 26px 24px 22px;
+      max-width: 410px;
       width: 100%;
       text-align: center;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, .8);
+      box-shadow: 0 30px 80px rgba(0, 0, 0, .85), inset 0 1px 0 rgba(255, 255, 255, .1);
     }
-    .netplay-card h3 { font-size: 18px; margin-bottom: 6px; color: #fff; }
-    .netplay-card p { font-size: 13px; color: #94a3b8; margin-bottom: 14px; line-height: 1.5; }
+    .netplay-card h3 { font-size: 18px; font-weight: 800; margin-bottom: 6px; color: #fff; letter-spacing: .02em; }
+    .netplay-card p { font-size: 13px; color: #94a3b8; margin-bottom: 14px; line-height: 1.55; }
     .qr-container {
       background: #fff;
       padding: 12px;
-      border-radius: 12px;
+      border-radius: 16px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       margin-bottom: 14px;
-      min-width: 160px;
-      min-height: 160px;
+      min-width: 168px;
+      min-height: 168px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
     }
     .room-badge {
       display: inline-block;
-      background: #1e293b;
-      color: #38bdf8;
-      border: 1px solid #0284c7;
-      border-radius: 8px;
-      padding: 5px 12px;
-      font-size: 15px;
-      font-weight: 700;
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--emerald-bright);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+      border-radius: 99px;
+      padding: 5px 16px;
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 800;
       letter-spacing: 2px;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
     .netplay-ip-row {
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       font-size: 12px;
       color: #94a3b8;
     }
     .netplay-ip-input {
-      background: #0f172a;
-      border: 1px solid #334155;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid var(--border-strong);
       color: #f8fafc;
-      padding: 4px 8px;
-      border-radius: 6px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-family: var(--mono);
       font-size: 12px;
-      width: 160px;
+      width: 168px;
       text-align: center;
+      outline: none;
     }
+    .netplay-ip-input:focus { border-color: var(--emerald-bright); }
     .netplay-actions {
       display: flex;
       gap: 10px;
       justify-content: center;
-      margin-top: 14px;
+      margin-top: 16px;
     }
     .netplay-action-btn {
-      background: #3b82f6;
+      background: linear-gradient(135deg, #10b981, #059669);
       color: #fff;
       border: 0;
-      padding: 8px 16px;
-      border-radius: 8px;
+      padding: 9px 18px;
+      border-radius: 10px;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
+      transition: filter .15s, transform .1s;
     }
+    .netplay-action-btn:hover { filter: brightness(1.08); }
+    .netplay-action-btn:active { transform: scale(0.97); }
     .netplay-action-btn.secondary {
-      background: #334155;
-      color: #cbd5e1;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border);
+      color: #e2e8f0;
     }
     .netplay-status-text {
       font-size: 13px;
-      font-weight: 600;
-      margin-top: 10px;
+      font-weight: 700;
+      margin-top: 8px;
       color: #facc15;
     }
 
-    /* 手机访客 (Client) 专属全屏界面 */
+    /* ---------- 手机访客 (Client 2P) 专属全屏视窗 ---------- */
     body.is-client .topbar,
     body.is-client .notice,
     body.is-client .footer,
@@ -340,7 +593,7 @@
       display: none;
       position: fixed;
       inset: 0;
-      background: #000;
+      background: #05070b;
       z-index: 50;
       touch-action: none;
       user-select: none;
@@ -360,9 +613,9 @@
     }
     .client-header {
       position: absolute;
-      top: 10px;
-      left: 12px;
-      right: 12px;
+      top: 12px;
+      left: 14px;
+      right: 14px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -370,24 +623,28 @@
       pointer-events: none;
     }
     .client-pill {
-      background: rgba(15, 23, 42, .85);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, .15);
+      background: rgba(13, 18, 30, 0.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, .16);
       border-radius: 999px;
       padding: 6px 14px;
       font-size: 12px;
       color: #e2e8f0;
-      font-weight: 600;
+      font-weight: 700;
       pointer-events: auto;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
     }
     .client-pill .dot {
       display: inline-block;
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: #22c55e;
-      margin-right: 6px;
+      background: #34d399;
+      box-shadow: 0 0 8px #34d399;
+      margin-right: 7px;
     }
+
     /* 手机端虚拟摇杆与按键层 */
     .client-controls {
       position: absolute;
@@ -398,7 +655,7 @@
     .touch-interactive { pointer-events: auto; }
     .client-shoulders {
       position: absolute;
-      top: 52px;
+      top: 54px;
       left: 16px;
       right: 16px;
       display: none;
@@ -407,56 +664,59 @@
     }
     .shoulder-btn {
       pointer-events: auto;
-      min-width: 68px;
-      height: 28px;
+      min-width: 72px;
+      height: 30px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, .14);
+      background: rgba(15, 23, 42, 0.72);
+      backdrop-filter: blur(8px);
       border: 1px solid rgba(255, 255, 255, .28);
       color: #fff;
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 800;
       touch-action: none;
     }
     .shoulder-btn:active, .shoulder-btn.active {
-      background: rgba(0, 210, 255, .55);
+      background: rgba(56, 189, 248, .58);
+      border-color: #7dd3fc;
       transform: scale(.95);
     }
     .client-dpad {
       position: absolute;
       left: 18px;
       bottom: 24px;
-      width: 152px;
-      height: 152px;
+      width: 154px;
+      height: 154px;
       border-radius: 50%;
-      background: rgba(255, 255, 255, .04);
-      border: 1px solid rgba(255, 255, 255, .12);
+      background: radial-gradient(circle, rgba(30, 41, 59, 0.55) 0%, rgba(15, 23, 42, 0.35) 100%);
+      border: 1px solid rgba(255, 255, 255, .16);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.1);
       touch-action: none;
     }
     .dpad-btn {
       position: absolute;
       width: 48px;
       height: 48px;
-      background: rgba(255, 255, 255, .12);
-      border: 1px solid rgba(255, 255, 255, .25);
-      border-radius: 10px;
+      background: rgba(255, 255, 255, .13);
+      border: 1px solid rgba(255, 255, 255, .26);
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
       color: #fff;
-      font-size: 18px;
-      font-weight: 700;
+      font-size: 16px;
+      font-weight: 800;
       pointer-events: none;
       transition: background .06s, transform .06s;
     }
     .dpad-btn.active {
-      background: rgba(0, 210, 255, .58);
-      border-color: rgba(0, 210, 255, .95);
-      transform: scale(.94);
+      background: rgba(56, 189, 248, .62);
+      border-color: #7dd3fc;
+      transform: scale(.93);
     }
-    .dpad-up { left: 52px; top: 4px; }
-    .dpad-down { left: 52px; bottom: 4px; }
-    .dpad-left { left: 4px; top: 52px; }
-    .dpad-right { right: 4px; top: 52px; }
+    .dpad-up { left: 53px; top: 5px; }
+    .dpad-down { left: 53px; bottom: 5px; }
+    .dpad-left { left: 5px; top: 53px; }
+    .dpad-right { right: 5px; top: 53px; }
 
     .client-actions {
       position: absolute;
@@ -484,8 +744,10 @@
       width: 58px;
       height: 58px;
       border-radius: 50%;
-      background: rgba(255, 255, 255, .14);
-      border: 2px solid rgba(255, 255, 255, .35);
+      background: rgba(15, 23, 42, .68);
+      backdrop-filter: blur(8px);
+      border: 2px solid rgba(255, 255, 255, .38);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.22);
       color: #fff;
       display: flex;
       flex-direction: column;
@@ -495,11 +757,11 @@
       cursor: pointer;
     }
     .act-btn:active, .act-btn.active {
-      background: rgba(239, 68, 68, .62);
+      background: rgba(239, 68, 68, .65);
       transform: scale(.93);
     }
     .layout-two .slot-left { left: 4px; bottom: 10px; border-color: #38bdf8; }
-    .layout-two .slot-left.active { background: rgba(56, 189, 248, .62); }
+    .layout-two .slot-left.active { background: rgba(56, 189, 248, .65); }
     .layout-two .slot-right { right: 4px; top: 10px; border-color: #ef4444; }
 
     .layout-three .act-btn { width: 54px; height: 54px; }
@@ -512,9 +774,9 @@
     .layout-diamond .slot-right { right: 2px; top: 58px; border-color: #ef4444; }
     .layout-diamond .slot-top { left: 58px; top: 2px; border-color: #22c55e; }
     .layout-diamond .slot-left { left: 2px; top: 58px; border-color: #facc15; }
-    .layout-diamond .slot-bottom.active { background: rgba(56, 189, 248, .62); }
-    .layout-diamond .slot-top.active { background: rgba(34, 197, 94, .62); }
-    .layout-diamond .slot-left.active { background: rgba(250, 204, 21, .62); color: #111; }
+    .layout-diamond .slot-bottom.active { background: rgba(56, 189, 248, .65); }
+    .layout-diamond .slot-top.active { background: rgba(34, 197, 94, .65); }
+    .layout-diamond .slot-left.active { background: rgba(250, 204, 21, .68); color: #111; }
 
     .layout-six .act-btn {
       position: static;
@@ -534,41 +796,27 @@
       gap: 10px;
     }
     .cap-btn {
-      min-width: 60px;
+      min-width: 64px;
       height: 30px;
-      padding: 0 12px;
+      padding: 0 14px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, .15);
-      border: 1px solid rgba(255, 255, 255, .28);
+      background: rgba(15, 23, 42, .72);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, .3);
       color: #fff;
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
+      white-space: nowrap;
       touch-action: none;
     }
-    .cap-btn:active, .cap-btn.active { background: rgba(0, 210, 255, .55); }
-
-    @media (max-width: 440px) {
-      .client-dpad { left: 10px; bottom: 56px; width: 136px; height: 136px; }
-      .dpad-btn { width: 42px; height: 42px; font-size: 16px; }
-      .dpad-up { left: 47px; top: 3px; }
-      .dpad-down { left: 47px; bottom: 3px; }
-      .dpad-left { left: 3px; top: 47px; }
-      .dpad-right { right: 3px; top: 47px; }
-      .client-actions { right: 10px; bottom: 56px; }
-      .client-actions.layout-diamond { width: 150px; height: 150px; bottom: 50px; }
-      .layout-diamond .act-btn { width: 46px; height: 46px; }
-      .layout-diamond .slot-bottom { left: 52px; }
-      .layout-diamond .slot-top { left: 52px; }
-      .layout-diamond .slot-right, .layout-diamond .slot-left { top: 52px; }
-      .client-actions.layout-six { width: 164px; height: 108px; bottom: 58px; gap: 6px; }
-      .layout-six .act-btn { width: 46px; height: 46px; }
-      .client-capsules { bottom: 14px; }
-    }
+    .cap-btn:active, .cap-btn.active { background: rgba(56, 189, 248, .58); border-color: #7dd3fc; }
 
     .client-audio-prompt {
       position: absolute;
       inset: 0;
-      background: rgba(0, 0, 0, .85);
+      background: rgba(5, 7, 12, .84);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       z-index: 30;
       display: flex;
       flex-direction: column;
@@ -580,18 +828,41 @@
     .client-audio-btn {
       background: linear-gradient(135deg, #10b981, #059669);
       color: #fff;
-      border: 0;
+      border: 1px solid #34d399;
       border-radius: 999px;
-      padding: 14px 32px;
-      font-size: 16px;
-      font-weight: 700;
+      padding: 13px 32px;
+      font-size: 15px;
+      font-weight: 800;
       cursor: pointer;
-      box-shadow: 0 10px 30px rgba(16, 185, 129, .5);
-      margin-top: 16px;
+      box-shadow: 0 12px 32px rgba(16, 185, 129, .45);
+      margin-top: 18px;
+    }
+
+    @media (max-width: 680px) {
+      .topbar { padding: 8px 12px; gap: 8px; }
+      .game-select { max-width: 165px; }
+      .frame-box { width: 100%; height: 100%; border-radius: 0; border: 0; }
+      .overlay-tools { max-width: calc(100vw - 16px); overflow-x: auto; }
+      .vkey { width: 52px; height: 52px; }
+    }
+    @media (max-width: 440px) {
+      .client-dpad { left: 10px; bottom: 56px; width: 136px; height: 136px; }
+      .dpad-btn { width: 42px; height: 42px; font-size: 15px; }
+      .dpad-up { left: 47px; top: 3px; }
+      .dpad-down { left: 47px; bottom: 3px; }
+      .dpad-left { left: 3px; top: 47px; }
+      .dpad-right { right: 3px; top: 47px; }
+      .client-actions { right: 10px; bottom: 56px; }
+      .client-actions.layout-diamond { width: 150px; height: 150px; bottom: 50px; }
+      .layout-diamond .act-btn { width: 46px; height: 46px; }
+      .layout-diamond .slot-bottom, .layout-diamond .slot-top { left: 52px; }
+      .layout-diamond .slot-right, .layout-diamond .slot-left { top: 52px; }
+      .client-actions.layout-six { width: 164px; height: 108px; bottom: 58px; gap: 6px; }
+      .layout-six .act-btn { width: 46px; height: 46px; }
+      .client-capsules { bottom: 14px; }
     }
   </style>
   <script>
-    // 全局异常可视上屏，杜绝静默黑屏
     window.addEventListener('error', function (e) {
       var box = document.getElementById('diag');
       if (box) box.textContent += ' [异常] ' + (e.message || e) + '\n';
@@ -604,9 +875,15 @@
 </head>
 <body data-mode="full">
   <header class="topbar">
-    <div class="brand">
-      Alex 游戏百宝箱 · 网页播放器
-      <small id="game-label">载入中…</small>
+    <div class="brand-group">
+      <a class="back-hall" href="index.html" title="返回像素街机馆大厅">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 3L5 8l5 5"/></svg>
+        <span>街机大厅</span>
+      </a>
+      <div class="brand">
+        <span class="brand-title">Alex 游戏百宝箱</span>
+        <small id="game-label">载入中…</small>
+      </div>
     </div>
     <div class="controls">
       <select id="game-select" class="game-select" aria-label="选择游戏"></select>
@@ -624,7 +901,7 @@
   <div class="netplay-modal" id="netplay-modal">
     <div class="netplay-card">
       <h3>WebRTC 双人跨端联机</h3>
-      <p>手机与电脑在同一 WiFi 或公网下，扫码即可作为 2P 加入双人联机对战！</p>
+      <p>手机与电脑在同一 WiFi 或移动网络下，扫码即可作为 2P 手柄同步音画加入双人对战</p>
       <div class="room-badge" id="netplay-room-badge">PLAY-....</div>
       <div>
         <div class="qr-container" id="netplay-qrcode"></div>
@@ -632,7 +909,7 @@
       <div class="netplay-ip-row" id="netplay-ip-row">
         <span>局域网/域名:</span>
         <input type="text" class="netplay-ip-input" id="netplay-host-input" placeholder="例如 192.168.0.100:8766" />
-        <button type="button" class="netplay-action-btn secondary" id="btn-update-qr" style="padding: 4px 10px; font-size: 11px;">刷新码</button>
+        <button type="button" class="netplay-action-btn secondary" id="btn-update-qr" style="padding: 6px 12px; font-size: 11px;">刷新码</button>
       </div>
       <div class="netplay-status-text" id="netplay-status-text">等待 2P 手机扫码连接...</div>
       <div class="netplay-actions">
@@ -679,7 +956,6 @@
 
   <main class="stage" id="stage">
     <div class="frame-box" id="frame-box">
-      <!-- 同源 iframe：父页可直接读取 contentWindow.GGEMU_CORE，不需要 postMessage -->
       <iframe id="game-frame" src="" allow="autoplay; fullscreen" title="游戏画面"></iframe>
     </div>
 
@@ -705,9 +981,9 @@
   <footer class="footer">
     <div class="status-line">
       <span id="gamepad-status">检测中…</span>
-      <span id="kbd-hint" style="color: #38bdf8; font-size: 12px; margin-left: 12px;">键盘：WASD/方向键移动 · J 主键(B) · K 副键(A) · Enter 开始 · Shift 选择</span>
+      <span id="kbd-hint">键盘：WASD/方向键移动 · J 主键(B) · K 副键(A) · Enter 开始 · Shift 选择</span>
       <details id="debug-panel">
-        <summary>调试</summary>
+        <summary>诊断</summary>
         <div>输入桥：<span id="bridge-status" class="">bridge-loading</span></div>
         <div id="diag">等待 iframe 载入…</div>
       </details>

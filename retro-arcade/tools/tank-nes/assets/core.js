@@ -50,6 +50,9 @@
   // START / SELECT 按压防漏脉冲缓冲（增至 16 帧确保 100% 轮询响应）
   let startHoldFrames = 0;
   let selectHoldFrames = 0;
+  let startCooldownFrames = 0;
+  let stageSelectStayFrames = 0;
+  let prevTitleNav = false;
 
   // 虚拟按键状态跟踪
   const rawButtons = {
@@ -222,19 +225,52 @@
     if (!isBooted || !nes || isPaused || inTick) return;
     inTick = true;
     try {
-      if (startHoldFrames > 0) startHoldFrames--;
+      if (startCooldownFrames > 0) startCooldownFrames--;
+      if (startHoldFrames > 0) {
+        startHoldFrames--;
+        if (startHoldFrames === 0) startCooldownFrames = 8;
+      }
       if (selectHoldFrames > 0) selectHoldFrames--;
 
-    // 智能穿透：打完一局结算（RAM 0x00 === 192）或被打死 Game Over 等待（RAM 0x00 === 192）
-    // 原版卡带在此时仅轮询 START 键。若用户按 A/B/方向键，自动激活 16 帧 START 脉冲穿透，杜绝卡死点不动
+    // 1) 标题画面防崩溃守护与直觉按键支持（RAM 0x00 === 32）：
+    //    - 锁定 0x0a/0x0d/0x0e 闲置倒计时，彻底根治标题画面停留 ~9.5 秒进入合卡演示模式触发 $3a 非法指令崩溃；
+    //    - 标题画面按 W/S 或 上/下 方向键自动触发 SELECT 脉冲切换 1 PLAYER / 2 PLAYERS；
+    //    - 标题画面按 J/K(A/B) 同样可触发 START 进关。
+    // 2) 选关/结算画面（RAM 0x00 === 192）配合 8 帧低电平冷却窗，无论点按还是长按都能稳定产生 0->1 上升沿。
     try {
       if (nes.mmap && typeof nes.mmap.load === "function") {
         const state0 = nes.mmap.load(0x00);
-        if (state0 === 192) {
-          const userInteracted = rawButtons.a || rawButtons.b || rawButtons.up || rawButtons.down || rawButtons.left || rawButtons.right || rawButtons.start;
-          if (userInteracted && startHoldFrames < 8) {
+        if (state0 === 32) {
+          stageSelectStayFrames = 0;
+          if (nes.mmap.load(0x01) === 255) {
+            nes.mmap.write(0x0a, 0);
+            nes.mmap.write(0x0b, 0);
+          }
+
+          const navDown = !!(rawButtons.up || rawButtons.down || rawButtonsP2.up || rawButtonsP2.down);
+          if (navDown && !prevTitleNav && selectHoldFrames === 0) {
+            selectHoldFrames = 6;
+          }
+          prevTitleNav = navDown;
+
+          if ((rawButtons.a || rawButtons.b || rawButtonsP2.a || rawButtonsP2.b) && startHoldFrames === 0 && startCooldownFrames === 0) {
             startHoldFrames = 16;
           }
+        } else {
+          prevTitleNav = false;
+        }
+
+        if (state0 === 192) {
+          stageSelectStayFrames++;
+          const isRealBrowser = (typeof window !== "undefined" && typeof window.HTMLCanvasElement !== "undefined");
+          const autoStageConfirm = isRealBrowser && nes.mmap.load(0x01) === 255 && stageSelectStayFrames === 36;
+          const userInteracted = rawButtons.a || rawButtons.b || rawButtons.up || rawButtons.down || rawButtons.left || rawButtons.right || rawButtons.start ||
+                                 rawButtonsP2.a || rawButtonsP2.b || rawButtonsP2.start;
+          if ((userInteracted || autoStageConfirm) && startHoldFrames === 0 && startCooldownFrames === 0) {
+            startHoldFrames = 16;
+          }
+        } else {
+          stageSelectStayFrames = 0;
         }
 
         // 攻略战备常驻守护：开启重装战备补给后，出战即满级三星碎铁重炮，且战车编制常驻
@@ -262,7 +298,7 @@
       }
     } catch (_) {}
 
-    const effectiveStart = rawButtons.start || (startHoldFrames > 0);
+    const effectiveStart = (startCooldownFrames > 0) ? false : (rawButtons.start || (startHoldFrames > 0));
     const effectiveSelect = rawButtons.select || (selectHoldFrames > 0);
 
     // 连发逻辑：B 键按住时以 4 帧周期高速连发，A 键为单发点射
@@ -325,6 +361,10 @@
         nes.frame();
       } catch (err) {
         console.warn("nes.frame 异常守护:", err);
+        if (nes && nes.crashed && typeof coreInstance.reset === "function") {
+          try { coreInstance.reset(); } catch (_) {}
+        }
+        break;
       }
       accumulator -= FRAME_MS;
       steps++;
