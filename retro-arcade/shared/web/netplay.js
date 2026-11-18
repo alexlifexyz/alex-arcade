@@ -1,14 +1,15 @@
 // shared/web/netplay.js
 // 像素街机馆 · WebRTC 双人跨端联机模块 (Remote Play 远程同乐模式)
 // 适配 PC 端房主 (1P) 与 手机端访客 (2P) 扫码极速同屏对战。
-// 零服务器负担，点对点 UDP 低延迟，100% 杜绝不同步 (Zero Desync)。
+// 由房主端主动发起音视频 Offer 推流（确保 video + audio 双轨完整送达手机端），
+// 采用有序可靠 DataChannel + 周期性按住状态对账，彻底杜绝乱序卡键与丢包。
 (function (root) {
   'use strict';
 
   var locSearch = (typeof window !== 'undefined' && window.location && window.location.search) || '';
   var qs = new URLSearchParams(locSearch);
   var roomParam = qs.get('room');
-  var gameParam = qs.get('game') || 'tank-nes';
+  var urlGameParam = qs.get('game') || '';
 
   var DEFAULT_PAD = {
     layout: 'two-button',
@@ -42,16 +43,18 @@
     conn: null,
     call: null,
     roomId: null,
+    gameId: urlGameParam || 'tank-nes',
     isHost: false,
     isClient: false,
     latencyMs: 0,
     mediaStream: null,
     pingTimer: null,
+    streamRetryTimer: null,
     onInputCallback: null,
     onStatusCallback: null
   };
 
-  // 1. 工具函数：随机生成易记的 4 位房间号（通用前缀，适用于所有双人游戏）
+  // 1. 工具函数：随机生成易记的 4 位房间号（通用前缀）
   function generateRoomId() {
     var chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
     var res = '';
@@ -59,6 +62,16 @@
       res += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return 'PLAY-' + res;
+  }
+
+  // 清洗用户手工输入的局域网 host（剥离误粘贴的 http://、https:// 及路径）
+  function cleanHostInput(raw) {
+    if (!raw) return '';
+    var s = String(raw).trim();
+    s = s.replace(/^https?:\/\//i, '');
+    var slashIdx = s.indexOf('/');
+    if (slashIdx >= 0) s = s.slice(0, slashIdx);
+    return s.trim();
   }
 
   // 清洗 pad 配置为纯 JSON 可传输对象，剔除函数与关注弹窗等附加字段
@@ -125,13 +138,15 @@
     var actionSpecs = [];
     if (layoutMode === 'six') {
       actionSpecs = actions.slice(0, 6).map(function (a, idx) {
+        var r = typeof a.row === 'number' ? a.row : Math.floor(idx / 3);
+        var c = typeof a.col === 'number' ? a.col : (idx % 3);
         return {
           id: a.id,
           label: a.label,
           sub: a.sub || '',
-          row: typeof a.row === 'number' ? a.row : Math.floor(idx / 3),
-          col: typeof a.col === 'number' ? a.col : (idx % 3),
-          slot: 'grid-' + (typeof a.row === 'number' ? a.row : Math.floor(idx / 3)) + '-' + (typeof a.col === 'number' ? a.col : (idx % 3))
+          row: r,
+          col: c,
+          slot: 'grid-' + r + '-' + c
         };
       });
     } else if (layoutMode === 'diamond') {
@@ -219,7 +234,7 @@
     };
   }
 
-  // 4. 手机端多指与 D-Pad 滑动状态追踪器（纯内存去重发包，断线可全释放）
+  // 4. 手机端多指与 D-Pad 滑动状态追踪器（纯内存去重发包，支持生成完整按住快照供心跳对账）
   function createClientInputSender(sendFn) {
     var pointers = {}; // pointerId -> btnId
     var counts = {};   // btnId -> active pointer count
@@ -285,11 +300,16 @@
       }
     }
 
+    function snapshotHeld() {
+      return Object.keys(dpadHeld).concat(Object.keys(counts));
+    }
+
     return {
       setDpadDirs: setDpadDirs,
       pressButton: pressButton,
       releaseButton: releaseButton,
       releaseAll: releaseAll,
+      snapshotHeld: snapshotHeld,
       getActiveDpad: function () { return Object.keys(dpadHeld); },
       getHeldButtons: function () { return Object.keys(counts); }
     };
@@ -300,25 +320,33 @@
     return !!roomParam;
   };
 
-  function clearPingTimer() {
+  function clearTimers() {
     if (Netplay.pingTimer) {
       clearInterval(Netplay.pingTimer);
       Netplay.pingTimer = null;
     }
+    if (Netplay.streamRetryTimer) {
+      clearTimeout(Netplay.streamRetryTimer);
+      Netplay.streamRetryTimer = null;
+    }
   }
 
-  // 6. 房主模式 (Host)：初始化 Peer 并等待 2P 手机连接
+  // 6. 房主模式 (Host)：初始化 Peer、等待 2P 连接并主动向 2P 推送音视频流
   Netplay.startHost = function (opts) {
     opts = opts || {};
     var onReady = opts.onReady || function () {};
     var onClientJoin = opts.onClientJoin || function () {};
     var onClientLeave = opts.onClientLeave || function () {};
     var onInput = opts.onInput || function () {};
+    var onSyncHeld = opts.onSyncHeld || function () {};
     var getStream = opts.getStream || null;
+
+    if (opts.gameId) Netplay.gameId = String(opts.gameId);
+
     var getWelcomeData = opts.getWelcomeData || function () {
       return {
         type: 'welcome',
-        game: gameParam,
+        game: Netplay.gameId,
         title: opts.gameTitle || '',
         pad: sanitizePad(opts.pad),
         hostTime: Date.now()
@@ -349,23 +377,75 @@
       return;
     }
 
+    function pushStreamToClient(clientPeerId, isAudioUpgrade) {
+      if (!Netplay.peer || !clientPeerId || !getStream) return;
+      var stream = getStream();
+      if (!stream) return;
+
+      if (Netplay.call) {
+        try { Netplay.call.close(); } catch (_) {}
+        Netplay.call = null;
+      }
+
+      var call = Netplay.peer.call(clientPeerId, stream);
+      Netplay.call = call;
+      if (call) {
+        call.on('close', function () {
+          if (Netplay.call === call) Netplay.call = null;
+        });
+        call.on('error', function (err) {
+          console.warn('房主推流通话异常:', err);
+        });
+      }
+
+      // 若首次推流时音频节点尚在异步 resume 微任务中，500ms 后检测是否新拿到了音轨并自动升级一次
+      var hasAudio = stream.getAudioTracks && stream.getAudioTracks().length > 0;
+      if (!hasAudio && !isAudioUpgrade) {
+        if (Netplay.streamRetryTimer) clearTimeout(Netplay.streamRetryTimer);
+        Netplay.streamRetryTimer = setTimeout(function () {
+          Netplay.streamRetryTimer = null;
+          if (!Netplay.conn || Netplay.conn.peer !== clientPeerId || !Netplay.conn.open) return;
+          var nextStream = getStream();
+          if (nextStream && nextStream.getAudioTracks && nextStream.getAudioTracks().length > 0) {
+            pushStreamToClient(clientPeerId, true);
+          }
+        }, 500);
+      }
+    }
+
     Netplay.peer.on('open', function (id) {
       Netplay.roomId = id;
       onReady(id);
     });
 
+    var detachPrevConn = null;
+
     Netplay.peer.on('connection', function (conn) {
+      // 若旧 2P 刷新网页重连，先静默剥离旧连接，避免旧连接晚到的 close 把新 2P 状态刷成断开
+      if (detachPrevConn) {
+        detachPrevConn();
+        detachPrevConn = null;
+      }
+
       var clientActive = false;
+      var detached = false;
       Netplay.conn = conn;
 
+      detachPrevConn = function () {
+        detached = true;
+        clientActive = false;
+        try { conn.close(); } catch (_) {}
+      };
+
       function notifyLeave() {
-        if (!clientActive) return;
+        if (detached || !clientActive) return;
         clientActive = false;
         if (Netplay.conn === conn) Netplay.conn = null;
         onClientLeave();
       }
 
       conn.on('open', function () {
+        if (detached) return;
         clientActive = true;
         onClientJoin(conn.peer);
         try {
@@ -373,14 +453,23 @@
         } catch (err) {
           console.warn('发送欢迎配置失败:', err);
         }
+        // 由房主主动向 2P 发起携带 video + audio 双轨的媒体呼叫
+        pushStreamToClient(conn.peer, false);
       });
 
       conn.on('data', function (data) {
-        if (!data || typeof data !== 'object') return;
+        if (detached || !data || typeof data !== 'object') return;
         if (data.type === 'input') {
           onInput(data.btn, data.pressed, 2);
         } else if (data.type === 'ping') {
-          conn.send({ type: 'pong', clientTime: data.clientTime });
+          if (Array.isArray(data.held)) {
+            onSyncHeld(data.held);
+          }
+          try { conn.send({ type: 'pong', clientTime: data.clientTime }); } catch (_) {}
+        } else if (data.type === 'hello') {
+          try { conn.send(getWelcomeData()); } catch (_) {}
+        } else if (data.type === 'request-stream') {
+          pushStreamToClient(conn.peer, false);
         }
       });
 
@@ -391,15 +480,12 @@
       });
     });
 
+    // 兼容旧版访客主动发起 call 的回退分支
     Netplay.peer.on('call', function (call) {
       Netplay.call = call;
       var stream = getStream ? getStream() : null;
-      if (stream) {
-        call.answer(stream);
-      } else {
-        console.warn('未能捕获视频流');
-        call.answer();
-      }
+      if (stream) call.answer(stream);
+      else call.answer();
       call.on('close', function () {
         if (Netplay.call === call) Netplay.call = null;
       });
@@ -417,8 +503,10 @@
     var onWelcome = opts.onWelcome || function () {};
     var onStream = opts.onStream || function () {};
     var onDisconnected = opts.onDisconnected || function () {};
+    var getHeldSnapshot = opts.getHeldSnapshot || function () { return []; };
     var targetRoom = roomParam;
     var notifiedDisconnect = false;
+    var gotStream = false;
 
     Netplay.isHost = false;
     Netplay.isClient = true;
@@ -432,7 +520,7 @@
     function notifyDisconnect() {
       if (notifiedDisconnect) return;
       notifiedDisconnect = true;
-      clearPingTimer();
+      clearTimers();
       onDisconnected();
     }
 
@@ -451,40 +539,49 @@
       return;
     }
 
+    // 接听来自房主的主动推流呼叫（房主 Offer 同时包含 video + audio 轨道，手机无需构造假流）
+    Netplay.peer.on('call', function (call) {
+      if (Netplay.call && Netplay.call !== call) {
+        try { Netplay.call.close(); } catch (_) {}
+      }
+      Netplay.call = call;
+      call.answer();
+      call.on('stream', function (remoteStream) {
+        gotStream = true;
+        onStream(remoteStream);
+      });
+      call.on('error', function (err) {
+        console.warn('接收媒体流异常:', err);
+      });
+    });
+
     Netplay.peer.on('open', function () {
-      var conn = Netplay.peer.connect(targetRoom, { reliable: false });
+      // 启用有序可靠通道 (reliable: true -> ordered: true)，彻底杜绝松开包乱序或丢包导致死走
+      var conn = Netplay.peer.connect(targetRoom, { reliable: true });
       Netplay.conn = conn;
 
       conn.on('open', function () {
         onConnected(targetRoom);
+        try { conn.send({ type: 'hello', clientTime: Date.now() }); } catch (_) {}
 
-        clearPingTimer();
+        clearTimers();
         Netplay.pingTimer = setInterval(function () {
           if (conn.open) {
-            conn.send({ type: 'ping', clientTime: Date.now() });
+            conn.send({
+              type: 'ping',
+              clientTime: Date.now(),
+              held: getHeldSnapshot()
+            });
           }
         }, 1500);
 
-        var dummyStream = null;
-        try {
-          var dummyCanvas = document.createElement('canvas');
-          dummyCanvas.width = 2;
-          dummyCanvas.height = 2;
-          dummyStream = dummyCanvas.captureStream ? dummyCanvas.captureStream(1) : null;
-        } catch (_) {}
-
-        var call = Netplay.peer.call(targetRoom, dummyStream || (typeof MediaStream !== 'undefined' ? new MediaStream() : undefined));
-        Netplay.call = call;
-
-        if (call) {
-          call.on('stream', function (remoteStream) {
-            onStream(remoteStream);
-          });
-          call.on('close', notifyDisconnect);
-          call.on('error', function (err) {
-            console.warn('媒体通话异常:', err);
-          });
-        }
+        // 若 1.8 秒内未收到房主推流呼叫，主动请求一次推流重发
+        Netplay.streamRetryTimer = setTimeout(function () {
+          Netplay.streamRetryTimer = null;
+          if (!gotStream && conn.open) {
+            try { conn.send({ type: 'request-stream' }); } catch (_) {}
+          }
+        }, 1800);
       });
 
       conn.on('data', function (data) {
@@ -526,17 +623,19 @@
     }
   };
 
-  // 9. 房主生成联机分享链接 (支持自动识别局域网 IP / 部署域名)
+  // 9. 房主生成联机分享链接 (自动清洗手工填写的协议头/斜杠，并使用当前真实游戏 ID)
   Netplay.getJoinUrl = function (overrideHost) {
     var loc = window.location;
-    var host = overrideHost || loc.host;
+    var cleaned = cleanHostInput(overrideHost);
+    var host = cleaned || loc.host;
     var path = loc.pathname;
     var proto = loc.protocol;
-    return proto + '//' + host + path + '?game=' + encodeURIComponent(gameParam) + '&room=' + encodeURIComponent(Netplay.roomId);
+    var gid = Netplay.gameId || urlGameParam || 'tank-nes';
+    return proto + '//' + host + path + '?game=' + encodeURIComponent(gid) + '&room=' + encodeURIComponent(Netplay.roomId);
   };
 
   Netplay.disconnect = function () {
-    clearPingTimer();
+    clearTimers();
     try { if (Netplay.call) Netplay.call.close(); } catch (_) {}
     try { if (Netplay.conn) Netplay.conn.close(); } catch (_) {}
     try { if (Netplay.peer) Netplay.peer.destroy(); } catch (_) {}
@@ -546,6 +645,7 @@
   };
 
   Netplay.generateRoomId = generateRoomId;
+  Netplay.cleanHostInput = cleanHostInput;
   Netplay.sanitizePad = sanitizePad;
   Netplay.resolveDpadDirections = resolveDpadDirections;
   Netplay.buildClientButtonSpecs = buildClientButtonSpecs;

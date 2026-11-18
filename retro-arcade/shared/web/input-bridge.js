@@ -150,6 +150,12 @@
       handleModeChange: releaseAll,
       handleReload: releaseAll,
       held: function () { return Object.keys(held).map(function (k) { return held[k].norm; }); },
+      heldFor: function (targetPlayer) {
+        var p = targetPlayer || 1;
+        return Object.keys(held)
+          .filter(function (k) { return held[k].player === p && !held[k].pendingRelease; })
+          .map(function (k) { return held[k].norm; });
+      },
       log: log,
       holdMs: holdMs,
       attach: attach,

@@ -182,4 +182,147 @@ console.log('--- 测试 6: 房主端 2P 断线释放不影响 1P 按键 ---');
   console.log('PASS: 2P 断线全释放完全隔离 1P 状态');
 }
 
-console.log('ALL NETPLAY TESTS PASSED!');
+console.log('--- 测试 7: Host 主动双轨推流、reliable:true、重连防假断开与按住状态对账 ---');
+{
+  const EventEmitter = require('events');
+  const peers = {};
+
+  class MockConn extends EventEmitter {
+    constructor(srcId, dstId, opts) {
+      super();
+      this.peer = dstId;
+      this.options = opts || {};
+      this.open = false;
+      this.counterpart = null;
+    }
+    send(payload) {
+      if (this.open && this.counterpart && this.counterpart.open) {
+        this.counterpart.emit('data', JSON.parse(JSON.stringify(payload)));
+      }
+    }
+    close() {
+      if (!this.open) return;
+      this.open = false;
+      this.emit('close');
+      if (this.counterpart && this.counterpart.open) {
+        this.counterpart.open = false;
+        this.counterpart.emit('close');
+      }
+    }
+  }
+
+  class MockCall extends EventEmitter {
+    constructor(peerId, stream) {
+      super();
+      this.peer = peerId;
+      this._offeredStream = stream;
+      this.counterpart = null;
+    }
+    answer(answerStream) {
+      this._answerStream = answerStream;
+      if (this.counterpart && this.counterpart._offeredStream) {
+        this.emit('stream', this.counterpart._offeredStream);
+      }
+    }
+    close() {
+      this.emit('close');
+    }
+  }
+
+  global.Peer = class MockPeer extends EventEmitter {
+    constructor(idOrOpts) {
+      super();
+      this.id = typeof idOrOpts === 'string' ? idOrOpts : ('CLIENT-' + Math.random().toString(36).slice(2, 6));
+      peers[this.id] = this;
+      setImmediate(() => this.emit('open', this.id));
+    }
+    connect(targetId, opts) {
+      const hostPeer = peers[targetId];
+      const clientConn = new MockConn(this.id, targetId, opts);
+      const hostConn = new MockConn(targetId, this.id, opts);
+      clientConn.counterpart = hostConn;
+      hostConn.counterpart = clientConn;
+      setImmediate(() => {
+        hostPeer.emit('connection', hostConn);
+        hostConn.open = true;
+        clientConn.open = true;
+        hostConn.emit('open');
+        clientConn.emit('open');
+      });
+      return clientConn;
+    }
+    call(targetId, stream) {
+      const targetPeer = peers[targetId];
+      const hostCall = new MockCall(targetId, stream);
+      const clientCall = new MockCall(this.id, null);
+      hostCall.counterpart = clientCall;
+      clientCall.counterpart = hostCall;
+      setImmediate(() => targetPeer.emit('call', clientCall));
+      return hostCall;
+    }
+    destroy() { delete peers[this.id]; }
+  };
+
+  // 验证 cleanHostInput 与 getJoinUrl
+  assert.strictEqual(Netplay.cleanHostInput('http://192.168.1.9:8766/play.html'), '192.168.1.9:8766');
+  assert.strictEqual(Netplay.cleanHostInput('https://arcade.example.com/'), 'arcade.example.com');
+
+  let leaveCount = 0;
+  let syncedHeld = null;
+  const mockHostStream = {
+    id: 'host-av-stream',
+    getVideoTracks: () => [{ kind: 'video' }],
+    getAudioTracks: () => [{ kind: 'audio' }]
+  };
+
+  Netplay.startHost({
+    gameId: '3wonders-cps1',
+    gameTitle: '三合一',
+    pad: { layout: 'diamond', actions: [{ id: 'y', label: '攻击' }], capsules: [{ id: 'coin', label: '投币' }] },
+    getStream: () => mockHostStream,
+    onClientLeave: () => { leaveCount++; },
+    onSyncHeld: (h) => { syncedHeld = h; }
+  });
+
+  setImmediate(() => {
+    const hostPeer = Netplay.peer;
+    const roomId = Netplay.roomId;
+    assert.strictEqual(Netplay.gameId, '3wonders-cps1', '真实 gameId 不得回退为 tank-nes');
+
+    // 模拟第 1 个客户端接入（验证 reliable:true 与房主主动双轨推流）
+    const c1 = new global.Peer();
+    let c1GotStream = null;
+    let c1Welcome = null;
+    c1.on('call', (call) => {
+      call.on('stream', (s) => { c1GotStream = s; });
+      call.answer(); // 手机无参接听
+    });
+    c1.on('open', () => {
+      const conn1 = c1.connect(roomId, { reliable: true });
+      conn1.on('data', (d) => { if (d.type === 'welcome') c1Welcome = d; });
+      conn1.on('open', () => {
+        conn1.send({ type: 'ping', clientTime: 100, held: ['left'] });
+      });
+
+      setTimeout(() => {
+        assert.ok(c1Welcome && c1Welcome.game === '3wonders-cps1', '应收到正确游戏 welcome');
+        assert.strictEqual(c1GotStream, mockHostStream, '房主主动呼叫应将音视频双轨流完整送达访客');
+        assert.deepStrictEqual(syncedHeld, ['left'], '心跳捎带的 held 快照应触发房主对账');
+
+        // 模拟 2P 手机刷新重连（新连接覆盖旧连接时，旧连接的 close 不得误触发 onClientLeave）
+        const c2 = new global.Peer();
+        c2.on('call', (call) => call.answer());
+        c2.on('open', () => {
+          c2.connect(roomId, { reliable: true });
+          setTimeout(() => {
+            assert.strictEqual(leaveCount, 0, '2P 刷新重连覆盖旧连接时不得误报断开');
+            Netplay.disconnect();
+            delete global.Peer;
+            console.log('PASS: 房主主动双轨推流、有序通道、心跳对账与重连保护全部验证通过');
+            console.log('ALL NETPLAY TESTS PASSED!');
+          }, 30);
+        });
+      }, 30);
+    });
+  });
+}

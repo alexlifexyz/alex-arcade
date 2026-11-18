@@ -427,8 +427,8 @@
       layout: "two-button",
       stick: false,
       actions: [
-        { id: "b", key: "B", label: "B" }, // B 连射开火
-        { id: "a", key: "A", label: "A" }  // A 单发开火
+        { id: "b", key: "B", label: "B", sub: "连射" }, // B 连射开火
+        { id: "a", key: "A", label: "A", sub: "单发" }  // A 单发开火
       ],
       capsules: [
         { id: "select", label: "选择" },

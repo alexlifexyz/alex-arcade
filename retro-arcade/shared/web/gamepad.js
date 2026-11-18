@@ -125,7 +125,11 @@
           if (!prev[norm]) { bridge.press(norm, p); prev[norm] = true; }
         });
         Object.keys(prev).forEach(function (norm) {
-          if (prev[norm] && !desired[norm]) { bridge.release(norm, false, p); prev[norm] = false; }
+          if (prev[norm] && !desired[norm]) {
+            var isCap = !!(keymap.map[norm] && keymap.map[norm].kind === 'capsule');
+            bridge.release(norm, !isCap, p);
+            prev[norm] = false;
+          }
         });
         prevPads[pIdx] = prev;
         padInfo[pIdx].active = Object.keys(prev).filter(function (n) { return prev[n]; }).length;

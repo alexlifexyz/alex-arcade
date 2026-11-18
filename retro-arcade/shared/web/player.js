@@ -119,8 +119,17 @@
     } catch (_) {}
   }
   function focusGame() {
-    var B = window.WEB_INPUT_BRIDGE;
-    if (B) B.focusIframe(frame);
+    if (mode === 'deck') {
+      var B = window.WEB_INPUT_BRIDGE;
+      if (B) B.focusIframe(frame);
+    } else {
+      try {
+        if (document.activeElement && document.activeElement.tagName === 'IFRAME') {
+          document.activeElement.blur();
+        }
+        window.focus();
+      } catch (_) {}
+    }
     ensureAudioActive();
   }
   ['pointerdown', 'click', 'keydown', 'touchstart'].forEach(function (evt) {
@@ -452,7 +461,12 @@
       var kbd = window.WEB_KEYBOARD.createKeyboard({ bridge: bridge, window: window, document: document });
       kbd.attach();
       window.WEB_PLAYER._keyboard = kbd;
-      lines.push('keyboard-ready  PC键盘已全局激活：WASD/方向键移动，J开火，K连发，Enter开始，Shift/空格选择');
+      var kbdHintEl = document.getElementById('kbd-hint');
+      var hintText = typeof window.WEB_KEYBOARD.describeHint === 'function'
+        ? window.WEB_KEYBOARD.describeHint(bridge.getKeymap())
+        : '键盘：WASD/方向键移动 · J 主键(B) · K 副键(A) · Enter 开始 · Shift 选择';
+      if (kbdHintEl) kbdHintEl.textContent = hintText;
+      lines.push('keyboard-ready  ' + hintText);
     }
 
     lines.push('输入桥键表 ' + bridge.getKeymap().order.length + ' 键：' + bridge.getKeymap().order.join(','));
@@ -510,7 +524,10 @@
       document.body.classList.add('is-client');
       var clientVideo = document.getElementById('client-video');
       var clientAudioPrompt = document.getElementById('client-audio-prompt');
+      var promptTitleEl = document.getElementById('client-prompt-title');
+      var promptDescEl = document.getElementById('client-prompt-desc');
       var btnClientStart = document.getElementById('btn-client-start');
+      var btnClientSound = document.getElementById('btn-client-sound');
       var pingEl = document.getElementById('netplay-ping');
       var titleEl = document.getElementById('client-game-title');
       var dpadEl = document.getElementById('client-dpad');
@@ -518,6 +535,7 @@
       var capsulesEl = document.getElementById('client-capsules');
       var shouldersEl = document.getElementById('client-shoulders');
 
+      if (clientVideo) clientVideo.muted = true;
       if (titleEl) {
         titleEl.textContent = (game ? game.title : '2P 联机') + ' · 连接中';
       }
@@ -705,25 +723,62 @@
         clearAll: clearAllClientVisuals
       };
 
-      function activateVideo() {
-        if (clientVideo) {
+      var userUnlockedAudio = false;
+
+      function tryPlayClientVideo(wantSound) {
+        if (!clientVideo) return;
+        if (wantSound) {
+          clientVideo.muted = false;
+          var p = clientVideo.play();
+          if (p && typeof p.then === 'function') {
+            p.then(function () {
+              if (btnClientSound) btnClientSound.style.display = 'none';
+            }).catch(function () {
+              // 移动端浏览器在异步回调中拦截有声播放时，立即降级静音保证画面绝不黑屏，并展示顶部一键开声胶囊
+              clientVideo.muted = true;
+              clientVideo.play().catch(function () {});
+              if (btnClientSound) btnClientSound.style.display = 'inline-block';
+            });
+          }
+        } else {
+          clientVideo.muted = true;
           clientVideo.play().catch(function () {});
         }
+      }
+
+      function activateVideo(e) {
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
+        userUnlockedAudio = true;
         if (clientAudioPrompt) clientAudioPrompt.style.display = 'none';
+        if (btnClientSound) btnClientSound.style.display = 'none';
+        if (clientVideo && clientVideo.srcObject) {
+          tryPlayClientVideo(true);
+        } else if (clientVideo) {
+          clientVideo.play().catch(function () {});
+        }
       }
 
       if (btnClientStart) {
         btnClientStart.addEventListener('click', activateVideo);
-        btnClientStart.addEventListener('touchend', activateVideo);
+        btnClientStart.addEventListener('touchend', activateVideo, { passive: false });
+      }
+      if (btnClientSound) {
+        btnClientSound.addEventListener('click', activateVideo);
+        btnClientSound.addEventListener('touchend', activateVideo, { passive: false });
       }
 
       // 启动 Client 模式连接房主
       Netplay.startClient({
+        getHeldSnapshot: function () {
+          return clientSender.snapshotHeld ? clientSender.snapshotHeld() : [];
+        },
         onConnected: function () {
           if (pingEl) pingEl.textContent = '已连接';
           if (titleEl) {
             titleEl.textContent = (game ? game.title : '2P 联机') + ' · 已连接';
           }
+          if (promptTitleEl) promptTitleEl.textContent = '已连接 1P 房主！';
+          if (promptDescEl) promptDescEl.textContent = '轻触按钮开启联机声音与低延迟操控';
         },
         onWelcome: function (data) {
           if (titleEl) {
@@ -738,7 +793,14 @@
         onStream: function (remoteStream) {
           if (clientVideo) {
             clientVideo.srcObject = remoteStream;
-            clientVideo.play().catch(function () {});
+            if (userUnlockedAudio) {
+              tryPlayClientVideo(true);
+            } else {
+              // 玩家尚未点击遮罩时，底层先静音播放实时画面，杜绝黑屏等待
+              tryPlayClientVideo(false);
+              if (promptTitleEl) promptTitleEl.textContent = '实时画面已就绪！';
+              if (promptDescEl) promptDescEl.textContent = '轻触下方按钮开启声音并加入对战';
+            }
           }
         },
         onDisconnected: function () {
@@ -789,6 +851,7 @@
     }
 
     function captureHostStream() {
+      ensureAudioActive();
       var src = coreRef && typeof coreRef.source === 'function' ? coreRef.source() : null;
       var stream = null;
       if (src && typeof src.captureStream === 'function') {
@@ -815,6 +878,7 @@
       if (!Netplay.peer) {
         statusText.textContent = '正在创建联机房间...';
         Netplay.startHost({
+          gameId: game ? game.id : '',
           pad: coreRef && coreRef.pad ? coreRef.pad : null,
           gameTitle: game ? game.title : '',
           getStream: captureHostStream,
@@ -848,6 +912,21 @@
             }
             if (coreRef && typeof coreRef.setButton === 'function') {
               coreRef.setButton(btn, pressed, p);
+            }
+          },
+          onSyncHeld: function (clientHeldList) {
+            if (!bridge || !Array.isArray(clientHeldList)) return;
+            var B = window.WEB_INPUT_BRIDGE;
+            var clientSet = {};
+            for (var i = 0; i < clientHeldList.length; i++) {
+              var norm = B ? B.normalizeId(clientHeldList[i]) : String(clientHeldList[i] || '').toLowerCase();
+              if (norm) clientSet[norm] = true;
+            }
+            var hostHeld2 = typeof bridge.heldFor === 'function' ? bridge.heldFor(2) : [];
+            for (var j = 0; j < hostHeld2.length; j++) {
+              if (!clientSet[hostHeld2[j]]) {
+                bridge.release(hostHeld2[j], true, 2);
+              }
             }
           }
         });

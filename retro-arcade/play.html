@@ -644,12 +644,15 @@
 
   <!-- 手机访客 (Client 2P) 专属独立视窗 -->
   <div id="client-stage">
-    <video id="client-video" autoplay playsinline webkit-playsinline></video>
+    <video id="client-video" muted autoplay playsinline webkit-playsinline></video>
     <div class="client-header">
       <div class="client-pill">
         <span class="dot"></span><span id="client-game-title">2P 连接中</span>
       </div>
-      <div class="client-pill" id="netplay-ping">--ms</div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button type="button" class="client-pill" id="btn-client-sound" style="display:none; cursor:pointer; background:rgba(16,185,129,.88); border-color:#34d399; color:#fff;">点此开声</button>
+        <div class="client-pill" id="netplay-ping">--ms</div>
+      </div>
     </div>
     <!-- 触控按键层（根据房主游戏 pad 动态生成） -->
     <div class="client-controls">
@@ -668,9 +671,9 @@
     </div>
     <!-- 移动端音频破冰遮罩 -->
     <div class="client-audio-prompt" id="client-audio-prompt">
-      <h3 style="color:#fff; font-size: 20px; margin-bottom: 8px;">准备就绪！</h3>
-      <p style="color:#94a3b8; font-size: 14px;">已连接到 1P 房主，轻触屏幕开启联机画面与音频</p>
-      <button type="button" class="client-audio-btn" id="btn-client-start">加入游戏</button>
+      <h3 id="client-prompt-title" style="color:#fff; font-size: 20px; margin-bottom: 8px;">正在连接 1P 房主...</h3>
+      <p id="client-prompt-desc" style="color:#94a3b8; font-size: 14px;">正在建立点对点联机通道，请稍候</p>
+      <button type="button" class="client-audio-btn" id="btn-client-start">开启声音并加入</button>
     </div>
   </div>
 
@@ -702,7 +705,7 @@
   <footer class="footer">
     <div class="status-line">
       <span id="gamepad-status">检测中…</span>
-      <span id="kbd-hint" style="color: #38bdf8; font-size: 12px; margin-left: 12px;">键盘：WASD / 方向键移动 · J 开火 · K 连发 · Enter 开始 · Shift 选择</span>
+      <span id="kbd-hint" style="color: #38bdf8; font-size: 12px; margin-left: 12px;">键盘：WASD/方向键移动 · J 主键(B) · K 副键(A) · Enter 开始 · Shift 选择</span>
       <details id="debug-panel">
         <summary>调试</summary>
         <div>输入桥：<span id="bridge-status" class="">bridge-loading</span></div>
